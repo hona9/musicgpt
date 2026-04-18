@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -10,4 +5,81 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum SubscriptionTier {
+  FREE
+  PAID
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id                    String           @id @default(cuid())
+  email                 String           @unique
+  passwordHash          String
+  tier                  SubscriptionTier @default(FREE)
+  refreshToken          String?          @unique
+  refreshTokenExpiresAt DateTime?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  prompts       Prompt[]
+  notifications Notification[]
+}
+
+model Prompt {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job           GenerationJob?
+  notifications Notification[]
+
+  @@index([userId, createdAt])
+}
+
+model GenerationJob {
+  id           String    @id @default(cuid())
+  promptId     String    @unique // enforces one-to-one with Prompt
+  userId       String // denormalized — avoids join on hot queue-worker poll
+  status       JobStatus @default(QUEUED)
+  priority     Int       @default(0) // PAID=10, FREE=0; set at insert from user.tier
+  audioUrl     String?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  // Queue worker: WHERE status='QUEUED' ORDER BY priority DESC, createdAt ASC LIMIT 1
+  @@index([status, priority, createdAt])
+  // User job history: WHERE userId=? ORDER BY createdAt DESC
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  promptId  String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  // Fetch unread notifications for a user, newest-first
+  @@index([userId, read, createdAt])
 }
