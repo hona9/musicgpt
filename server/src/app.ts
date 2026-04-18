@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
 import { StatusCodes } from "http-status-codes";
+import apiRouter from "./presentation/routes";
 
 const app: Application = express();
 
@@ -32,7 +33,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
-// app.use("/api/v1", routes);
+app.use("/api", apiRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
