@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { VersionConfig, versionMiddleware } from "./version.middleware";
+import { VersionConfig, versionMiddleware } from "../middlewares/version.middleware";
 import v1Router from "./v1";
 
 // To deprecate a version: set deprecated: true, add sunsetDate and successorVersion.

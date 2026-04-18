@@ -1,10 +1,11 @@
-import express, { Application, Request, Response, NextFunction } from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
 import { StatusCodes } from "http-status-codes";
 import apiRouter from "./presentation/routes";
+import { errorMiddleware } from "./presentation/middlewares/error.middleware";
 
 const app: Application = express();
 
@@ -41,12 +42,6 @@ app.use((_req: Request, res: Response) => {
 });
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-    message:
-      env.node_env === "production" ? "Internal server error" : err.message,
-  });
-});
+app.use(errorMiddleware);
 
 export default app;
