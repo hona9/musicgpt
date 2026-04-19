@@ -5,6 +5,7 @@ import { PromptJobData } from "../../shared/types/queue.types";
 import { GenerationJobRepository } from "../repositories/GenerationJobRepository";
 import { NotificationRepository } from "../repositories/NotificationRepository";
 import { socketIOService } from "../services/SocketIOService";
+import { cacheService } from "../services/CacheService";
 import { JobStatus } from "../../shared/types/enums";
 
 const generationJobRepository = new GenerationJobRepository();
@@ -30,6 +31,9 @@ async function processGenerationJob(job: Job<PromptJobData>): Promise<void> {
   socketIOService.emitToUser(userId, { jobId: generationJobId, promptId, userId, status: "job:completed", audioUrl });
 
   await notificationRepository.create(userId, promptId, "Your track is ready!");
+
+  // Invalidate the user's cached prompt list so the completed audioUrl is visible.
+  await cacheService.invalidatePattern(`cache:prompts:${userId}:*`);
 }
 
 export function startPromptWorker(): void {

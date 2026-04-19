@@ -1,5 +1,6 @@
 import { IPromptRepository } from "../../../domain/repositories/IPromptRepository";
 import { IGenerationJobRepository } from "../../../domain/repositories/IGenerationJobRepository";
+import { ICacheService } from "../../../domain/services/ICacheService";
 import { PromptEntity } from "../../../domain/entities/Prompt";
 import { GenerationJobEntity } from "../../../domain/entities/GenerationJob";
 import { CreatePromptDto } from "../../dtos/prompt/CreatePromptDto";
@@ -15,6 +16,7 @@ export class CreatePromptUseCase {
   constructor(
     private readonly promptRepository: IPromptRepository,
     private readonly generationJobRepository: IGenerationJobRepository,
+    private readonly cacheService: ICacheService,
   ) {}
 
   async execute(
@@ -34,6 +36,9 @@ export class CreatePromptUseCase {
       userId,
       priority,
     });
+
+    // Invalidate the cached prompt list for this user.
+    await this.cacheService.invalidatePattern(`cache:prompts:${userId}:*`);
 
     return { prompt, job };
   }

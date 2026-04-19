@@ -1,4 +1,5 @@
 import { UserEntity } from "../entities/User";
+import { CursorData, PageResult } from "../../shared/types/pagination.types";
 
 export interface UserWithCredentials extends UserEntity {
   passwordHash: string;
@@ -24,4 +25,5 @@ export interface IUserRepository {
     token: string | null,
     expiresAt: Date | null,
   ): Promise<void>;
+  findAll(cursor: CursorData | null, limit: number): Promise<PageResult<UserEntity>>;
 }

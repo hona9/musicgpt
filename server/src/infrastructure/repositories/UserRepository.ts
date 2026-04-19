@@ -6,6 +6,8 @@ import {
   UserWithRefreshToken,
 } from "../../domain/repositories/IUserRepository";
 import { UserEntity } from "../../domain/entities/User";
+import { CursorData, PageResult } from "../../shared/types/pagination.types";
+import { encodeCursor } from "../../shared/utils/cursor";
 
 export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
@@ -43,6 +45,29 @@ export class UserRepository implements IUserRepository {
       where: { id: userId },
       data: { refreshToken: token, refreshTokenExpiresAt: expiresAt },
     });
+  }
+
+  async findAll(cursor: CursorData | null, limit: number): Promise<PageResult<UserEntity>> {
+    const rows = await prisma.user.findMany({
+      where: cursor
+        ? {
+            OR: [
+              { createdAt: { lt: cursor.createdAt } },
+              { createdAt: { equals: cursor.createdAt }, id: { lt: cursor.id } },
+            ],
+          }
+        : undefined,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+    });
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore
+      ? encodeCursor(items[items.length - 1].id, items[items.length - 1].createdAt)
+      : null;
+
+    return { items: items.map(this.toEntity), nextCursor };
   }
 
   private toEntity(user: {
