@@ -2,12 +2,18 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env";
 import { StatusCodes } from "http-status-codes";
+import { swaggerSpec } from "./config/swagger";
 import apiRouter from "./presentation/routes";
 import { errorMiddleware } from "./presentation/middlewares/error.middleware";
 
 const app: Application = express();
+
+// ─── API Docs ─────────────────────────────────────────────────────────────────
+// Mounted before helmet so swagger-ui assets aren't blocked by CSP headers.
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ─── Security ────────────────────────────────────────────────────────────────
 app.use(helmet());
