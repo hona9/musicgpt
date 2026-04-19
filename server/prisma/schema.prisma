@@ -16,6 +16,7 @@ enum SubscriptionTier {
 
 enum JobStatus {
   QUEUED
+  DISPATCHED // claimed by scheduler, in BullMQ queue awaiting worker pickup
   PROCESSING
   COMPLETED
   FAILED

@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
+    "worker": "nodemon --exec tsx src/worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "worker:prod": "node dist/worker.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -27,6 +29,7 @@
     "http-status-codes": "^2.3.0",
     "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
+    "socket.io": "^4.8.1",
     "morgan": "^1.10.1",
     "pg": "^8.20.0",
     "zod": "^4.3.6"
