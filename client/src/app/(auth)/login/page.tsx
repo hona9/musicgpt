@@ -4,13 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { authApi } from "@/lib/api/auth.api";
-import { useAuthStore } from "@/store/auth.store";
+import { useLogin } from "@/hooks/use-auth";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -20,31 +17,17 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const login = useLogin();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  async function onSubmit(data: FormData) {
-    setServerError(null);
-    try {
-      const res = await authApi.login(data);
-      const { user, accessToken, refreshToken } = res.data.data;
-      setAuth(user, accessToken, refreshToken);
-      document.cookie = "isLoggedIn=true; path=/; max-age=604800; SameSite=Lax";
-      router.push("/");
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Invalid email or password";
-      setServerError(msg);
-    }
-  }
+  const serverError =
+    (login.error as { response?: { data?: { message?: string } } })?.response
+      ?.data?.message ?? (login.error ? "Invalid email or password" : null);
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -54,7 +37,7 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Sign in to MusicGPT</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit((data) => login.mutate(data))} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -79,9 +62,7 @@ export default function LoginPage() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-xs text-destructive">
-                {errors.password.message}
-              </p>
+              <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
           </div>
 
@@ -91,8 +72,8 @@ export default function LoginPage() {
             </p>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+          <Button type="submit" className="w-full" disabled={login.isPending}>
+            {login.isPending ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 

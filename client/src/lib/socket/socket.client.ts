@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket | null = null;
 
 export function connectSocket(accessToken: string): Socket {
-  if (socket?.connected) return socket;
+  if (socket) return socket;
 
   socket = io(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001", {
     auth: { token: accessToken },

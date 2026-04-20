@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useJobsStore } from "@/store/jobs.store";
+import { useLogout } from "@/hooks/use-auth";
 import type { JobEvent } from "@/types/api.types";
 
 interface ProfilePopupProps {
@@ -11,9 +12,9 @@ interface ProfilePopupProps {
 
 export function ProfilePopup({ onClose }: ProfilePopupProps) {
   const user = useAuthStore((s) => s.user);
-  const jobs = useJobsStore((s) => s.jobs);
   const activeJobs = useJobsStore((s) => s.activeJobs)();
   const [alertVisible, setAlertVisible] = useState(true);
+  const logout = useLogout();
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "U";
 
@@ -170,8 +171,16 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
         </div>
       )}
 
-      {/* Bottom padding */}
-      <div className="h-1" />
+      {/* Logout */}
+      <div style={{ borderTop: "1px solid #2a2218" }} className="px-4 py-3">
+        <button
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+          className="w-full rounded-lg py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-[#2a2218] hover:text-foreground disabled:opacity-50"
+        >
+          {logout.isPending ? "Signing out…" : "Sign out"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -191,12 +200,33 @@ function JobItem({
   version: string;
   isLast: boolean;
 }) {
-  const progress = job.progress ?? 0;
+  const [progress, setProgress] = useState(job.progress ?? 0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (job.status !== "PROCESSING") return;
+    let p = 0;
+    intervalRef.current = setInterval(() => {
+      p += 1.4;
+      if (p >= 85) {
+        clearInterval(intervalRef.current!);
+        setProgress(85);
+        return;
+      }
+      setProgress(p);
+    }, 50);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [job.status]);
+
+  const displayProgress = Math.round(progress);
+
   const statusText =
     job.status === "QUEUED" || job.status === "DISPATCHED"
       ? "Waiting in queue…"
       : job.status === "PROCESSING"
-      ? "Generating"
+      ? "Processing your audio..."
       : job.message ?? job.status;
 
   return (
@@ -213,7 +243,7 @@ function JobItem({
           className="absolute inset-0 flex items-center justify-center"
           style={{ background: "rgba(0,0,0,0.45)" }}
         >
-          <span className="text-[13px] font-bold text-white">{progress}%</span>
+          <span className="text-[13px] font-bold text-white">{displayProgress}%</span>
         </div>
       </div>
 
