@@ -8,7 +8,7 @@ import type {
 
 export const promptsApi = {
   list: (params: { cursor?: string; limit?: number } = {}) =>
-    apiClient.get<ApiResponse<PromptsPage>>("/prompts", { params }),
+    apiClient.get<ApiResponse<PromptsPage>>("/prompts/list", { params }),
 
   create: (body: CreatePromptRequest) =>
     apiClient.post<ApiResponse<CreatePromptResponse>>("/prompts", body),

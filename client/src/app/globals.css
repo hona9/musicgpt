@@ -28,7 +28,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
 
-  /* Brand glow palette (orange/amber — matches the prompt box glow) */
+  /* Brand glow palette */
   --color-glow-orange: var(--glow-orange);
   --color-glow-amber:  var(--glow-amber);
   --color-glow-red:    var(--glow-red);
@@ -42,80 +42,181 @@
   --radius-3xl: calc(var(--radius) * 2.4);
 
   /* Fonts */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-inter);
 }
 
-/* ─── Dark Theme (only theme — no light mode) ────────────────────────────── */
+/* ─── Dark Theme ─────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
 
-  /* Glow palette */
-  --glow-orange: oklch(0.71 0.19 41);   /* #f97316 */
-  --glow-amber:  oklch(0.75 0.17 59);   /* #f59e0b */
-  --glow-red:    oklch(0.63 0.22 28);   /* #ea580c */
+  /* Brand palette — matches design spec */
+  --glow-orange: #e8820c;
+  --glow-amber:  #f59e0b;
+  --glow-red:    #dc2626;
 
-  /* Deep dark surfaces matching the screenshot */
-  --background:           oklch(0.1 0.005 260);    /* #0d0e11 — page bg */
-  --foreground:           oklch(0.96 0 0);          /* near-white text */
+  /* Surfaces — exact values from design spec */
+  --background:           #0c0c0c;
+  --foreground:           #f0f0f0;
 
-  --card:                 oklch(0.14 0.005 260);   /* #141518 — sidebar, cards */
-  --card-foreground:      oklch(0.96 0 0);
+  --card:                 #141414;
+  --card-foreground:      #f0f0f0;
 
-  --popover:              oklch(0.16 0.007 260);   /* #191b1f — dropdowns */
-  --popover-foreground:   oklch(0.96 0 0);
+  --popover:              #1a1612;
+  --popover-foreground:   #f0f0f0;
 
-  --muted:                oklch(0.18 0.006 260);   /* subtle bg for inputs */
-  --muted-foreground:     oklch(0.58 0 0);          /* secondary text */
+  --muted:                #1c1c1c;
+  --muted-foreground:     #7a7a7a;
 
-  --border:               oklch(1 0 0 / 8%);
-  --input:                oklch(1 0 0 / 10%);
-  --ring:                 oklch(0.71 0.19 41);      /* orange ring to match glow */
+  --border:               #2a2a2a;
+  --border-subtle:        #1f1f1f;
+  --input:                #1c1c1c;
+  --ring:                 #e8820c;
 
-  --primary:              oklch(0.96 0 0);
-  --primary-foreground:   oklch(0.1 0.005 260);
+  --primary:              #f0f0f0;
+  --primary-foreground:   #0c0c0c;
 
-  --secondary:            oklch(0.22 0.007 260);
-  --secondary-foreground: oklch(0.96 0 0);
+  --secondary:            #1c1c1c;
+  --secondary-foreground: #f0f0f0;
 
-  --accent:               oklch(0.22 0.007 260);
-  --accent-foreground:    oklch(0.96 0 0);
+  --accent:               #232323;
+  --accent-foreground:    #f0f0f0;
 
-  --destructive:          oklch(0.63 0.22 28);
+  --destructive:          #dc2626;
+
+  /* Extra semantic tokens */
+  --text-dim:             #4a4a4a;
+  --orange-soft:          rgba(232, 130, 12, 0.12);
+  --orange-glow:          rgba(232, 130, 12, 0.4);
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@layer base {
+  @keyframes spin-ring {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @keyframes window-sweep {
+    0%   { clip-path: inset(0 100% 0 0    round 14px); }
+    12%  { clip-path: inset(0 68%  0 0    round 14px); }
+    50%  { clip-path: inset(0 34%  0 34%  round 14px); }
+    88%  { clip-path: inset(0 0    0 68%  round 14px); }
+    100% { clip-path: inset(0 0    0 100% round 14px); }
+  }
+
+  @keyframes bloom-sweep {
+    0%   { background-position: -60% 0; }
+    100% { background-position: 160% 0; }
+  }
+
+  @keyframes bar-bounce {
+    0%, 100% { transform: scaleY(0.15); }
+    50%       { transform: scaleY(1); }
+  }
+
+  @keyframes pulse-opacity {
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 1; }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), 'Inter', sans-serif;
+  }
+
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 }
 
 /* ─── Utilities ──────────────────────────────────────────────────────────── */
 @layer utilities {
   .glow-border-orange {
     box-shadow:
-      0 0 0 1px oklch(0.71 0.19 41 / 60%),
-      0 0 18px 2px oklch(0.71 0.19 41 / 25%);
+      0 0 0 1px rgba(232, 130, 12, 0.6),
+      0 0 18px 2px rgba(232, 130, 12, 0.25);
   }
   .ring-glow-orange {
-    outline: 2px solid oklch(0.71 0.19 41);
+    outline: 2px solid #e8820c;
     outline-offset: 2px;
+  }
+  .animate-fade-up {
+    animation: fade-up 0.35s ease both;
+  }
+  .animate-slide-down {
+    animation: slide-down 0.18s ease both;
   }
 }
 
-/* ─── Base Styles ────────────────────────────────────────────────────────── */
-@layer base {
-  @keyframes pulse-glow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
+/* ─── Prompt Box Animated Border ─────────────────────────────────────────── */
+/* These are structural/animation classes that can't be expressed as Tailwind utilities */
+.glow-box {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid #252525;
+}
 
-  /* Custom scrollbar — subtle dark */
-  ::-webkit-scrollbar       { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 15%); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 25%); }
+.glow-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 2px;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+}
+
+.glow-layer-static {
+  background: linear-gradient(90deg, #e8820c 0%, #a855f7 50%, #e8820c 100%);
+  z-index: 1;
+  animation: window-sweep 5s ease-in-out infinite;
+}
+
+.glow-layer-bloom {
+  position: absolute;
+  inset: -8px;
+  border-radius: 22px;
+  background: linear-gradient(90deg, transparent 0%, #e8820c 30%, #a855f7 50%, #e8820c 70%, transparent 100%);
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+  filter: blur(18px);
+  opacity: 0.45;
+  animation: bloom-sweep 5s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.glow-box-inner {
+  position: relative;
+  z-index: 3;
+  border-radius: 11px;
+  overflow: hidden;
+  background: #161616;
 }

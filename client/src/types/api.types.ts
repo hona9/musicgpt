@@ -49,7 +49,7 @@ export interface PageResult<T> {
 }
 
 export interface PromptsPage {
-  prompts: PromptWithJob[];
+  items: PromptWithJob[];
   nextCursor: string | null;
 }
 
@@ -97,7 +97,9 @@ export interface CreatePromptRequest {
 }
 
 export interface CreatePromptResponse {
-  prompt: PromptWithJob;
+  promptId: string;
+  jobId: string;
+  jobStatus: string;
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────

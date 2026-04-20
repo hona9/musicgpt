@@ -14,7 +14,7 @@ export function patchJobInPages(
     ...data,
     pages: data.pages.map((page) => ({
       ...page,
-      prompts: page.prompts.map((p) =>
+      items: page.items.map((p) =>
         p.job?.id === event.jobId || p.id === event.promptId
           ? {
               ...p,
