@@ -1,0 +1,121 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+@theme inline {
+  /* Surfaces */
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+  --color-card:        var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover:     var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted:       var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border:      var(--border);
+  --color-input:       var(--input);
+  --color-ring:        var(--ring);
+
+  /* Semantic */
+  --color-primary:     var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:   var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent:      var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+
+  /* Brand glow palette (orange/amber — matches the prompt box glow) */
+  --color-glow-orange: var(--glow-orange);
+  --color-glow-amber:  var(--glow-amber);
+  --color-glow-red:    var(--glow-red);
+
+  /* Radius scale */
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ─── Dark Theme (only theme — no light mode) ────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  /* Glow palette */
+  --glow-orange: oklch(0.71 0.19 41);   /* #f97316 */
+  --glow-amber:  oklch(0.75 0.17 59);   /* #f59e0b */
+  --glow-red:    oklch(0.63 0.22 28);   /* #ea580c */
+
+  /* Deep dark surfaces matching the screenshot */
+  --background:           oklch(0.1 0.005 260);    /* #0d0e11 — page bg */
+  --foreground:           oklch(0.96 0 0);          /* near-white text */
+
+  --card:                 oklch(0.14 0.005 260);   /* #141518 — sidebar, cards */
+  --card-foreground:      oklch(0.96 0 0);
+
+  --popover:              oklch(0.16 0.007 260);   /* #191b1f — dropdowns */
+  --popover-foreground:   oklch(0.96 0 0);
+
+  --muted:                oklch(0.18 0.006 260);   /* subtle bg for inputs */
+  --muted-foreground:     oklch(0.58 0 0);          /* secondary text */
+
+  --border:               oklch(1 0 0 / 8%);
+  --input:                oklch(1 0 0 / 10%);
+  --ring:                 oklch(0.71 0.19 41);      /* orange ring to match glow */
+
+  --primary:              oklch(0.96 0 0);
+  --primary-foreground:   oklch(0.1 0.005 260);
+
+  --secondary:            oklch(0.22 0.007 260);
+  --secondary-foreground: oklch(0.96 0 0);
+
+  --accent:               oklch(0.22 0.007 260);
+  --accent-foreground:    oklch(0.96 0 0);
+
+  --destructive:          oklch(0.63 0.22 28);
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+@layer utilities {
+  .glow-border-orange {
+    box-shadow:
+      0 0 0 1px oklch(0.71 0.19 41 / 60%),
+      0 0 18px 2px oklch(0.71 0.19 41 / 25%);
+  }
+  .ring-glow-orange {
+    outline: 2px solid oklch(0.71 0.19 41);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── Base Styles ────────────────────────────────────────────────────────── */
+@layer base {
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Custom scrollbar — subtle dark */
+  ::-webkit-scrollbar       { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 15%); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 25%); }
+}
