@@ -23,6 +23,8 @@ export function useJobUpdates() {
   const qc = useQueryClient();
   const setJobEvent = useJobsStore((s) => s.setJobEvent);
   const removeJob = useJobsStore((s) => s.removeJob);
+  const addRecentCompleted = useJobsStore((s) => s.addRecentCompleted);
+  const incrementUnread = useJobsStore((s) => s.incrementUnread);
   const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export function useJobUpdates() {
     const onCompleted = (raw: JobEvent) => {
       const event = normalize(raw);
       setJobEvent(event);
+      addRecentCompleted(event);
+      incrementUnread();
       qc.setQueryData<InfinitePromptsData>(["prompts"], (old) =>
         old ? patchJobInPages(old, event) : old,
       );
@@ -59,5 +63,5 @@ export function useJobUpdates() {
       socket.off("job:completed", onCompleted);
       socket.off("job:failed", onFailed);
     };
-  }, [qc, setJobEvent, removeJob, accessToken]);
+  }, [qc, setJobEvent, removeJob, addRecentCompleted, incrementUnread, accessToken]);
 }

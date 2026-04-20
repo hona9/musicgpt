@@ -1,17 +1,26 @@
 import { create } from "zustand";
 import type { JobEvent, JobStatus } from "@/types/api.types";
 
-const ACTIVE_STATUSES: JobStatus[] = ["QUEUED", "DISPATCHED", "PROCESSING"];
+export const ACTIVE_STATUSES: JobStatus[] = ["QUEUED", "DISPATCHED", "PROCESSING"];
+
+const MAX_RECENT_COMPLETED = 5;
 
 interface JobsState {
   jobs: Record<string, JobEvent>;
+  recentCompleted: JobEvent[];
+  unreadCount: number;
+
   setJobEvent: (event: JobEvent) => void;
   removeJob: (jobId: string) => void;
-  activeJobs: () => JobEvent[];
+  addRecentCompleted: (event: JobEvent) => void;
+  incrementUnread: () => void;
+  clearUnread: () => void;
 }
 
-export const useJobsStore = create<JobsState>()((set, get) => ({
+export const useJobsStore = create<JobsState>()((set) => ({
   jobs: {},
+  recentCompleted: [],
+  unreadCount: 0,
 
   setJobEvent: (event) =>
     set((s) => ({ jobs: { ...s.jobs, [event.jobId]: event } })),
@@ -22,8 +31,12 @@ export const useJobsStore = create<JobsState>()((set, get) => ({
       return { jobs: rest };
     }),
 
-  activeJobs: () =>
-    Object.values(get().jobs).filter((j) =>
-      ACTIVE_STATUSES.includes(j.status),
-    ),
+  addRecentCompleted: (event) =>
+    set((s) => ({
+      recentCompleted: [event, ...s.recentCompleted.filter((j) => j.jobId !== event.jobId)]
+        .slice(0, MAX_RECENT_COMPLETED),
+    })),
+
+  incrementUnread: () => set((s) => ({ unreadCount: s.unreadCount + 1 })),
+  clearUnread: () => set({ unreadCount: 0 }),
 }));

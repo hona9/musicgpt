@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
-import { useJobsStore } from "@/store/jobs.store";
+import { useJobsStore, ACTIVE_STATUSES } from "@/store/jobs.store";
 import { useLogout } from "@/hooks/use-auth";
+import { getSongName } from "@/lib/song-names";
 import type { JobEvent } from "@/types/api.types";
 
 interface ProfilePopupProps {
@@ -12,13 +13,17 @@ interface ProfilePopupProps {
 
 export function ProfilePopup({ onClose }: ProfilePopupProps) {
   const user = useAuthStore((s) => s.user);
-  const activeJobs = useJobsStore((s) => s.activeJobs)();
+  const jobs = useJobsStore((s) => s.jobs);
+  const recentCompleted = useJobsStore((s) => s.recentCompleted);
+  const clearUnread = useJobsStore((s) => s.clearUnread);
+  const activeJobs = Object.values(jobs).filter((j) => ACTIVE_STATUSES.includes(j.status));
   const [alertVisible, setAlertVisible] = useState(true);
   const logout = useLogout();
 
+  useEffect(() => { clearUnread(); }, [clearUnread]);
+
   const initial = user?.email?.[0]?.toUpperCase() ?? "U";
 
-  // Close on outside click
   const popupRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -29,6 +34,8 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
+
+  const hasAnyJobs = activeJobs.length > 0 || recentCompleted.length > 0;
 
   return (
     <div
@@ -43,29 +50,20 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pb-3 pt-4">
         <div className="flex items-center gap-2.5">
-          {/* Avatar with spinning ring */}
-          <div className="relative size-11">
-            <div
-              className="absolute inset-[-2px] rounded-full"
-              style={{
-                background: "conic-gradient(#e8820c, #f59e0b, transparent, #e8820c)",
-                animation: "spin-ring 4s linear infinite",
-              }}
-            />
-            <div
-              className="absolute inset-[1px] flex items-center justify-center rounded-full text-[17px] font-bold"
-              style={{ background: "#1a1612" }}
-            >
-              {initial}
-            </div>
+          <div
+            className="flex size-11 items-center justify-center rounded-full text-[17px] font-bold"
+            style={{
+              background:
+                "linear-gradient(#1a1612, #1a1612) padding-box, linear-gradient(314.53deg, #C800FF, #FF2C9B, #FF7B00, #FF8504, #FFD363) border-box",
+              border: "2px solid transparent",
+              boxShadow: "0px 4px 32.6px -13px rgba(200,0,255,0.8)",
+            }}
+          >
+            {initial}
           </div>
           <div>
-            <p className="text-[14px] font-semibold">
-              {user?.email?.split("@")[0] ?? "User"}
-            </p>
-            <p className="text-[12px] text-muted-foreground">
-              @{user?.email?.split("@")[0] ?? "user"}
-            </p>
+            <p className="text-[14px] font-semibold">{user?.email?.split("@")[0] ?? "User"}</p>
+            <p className="text-[12px] text-muted-foreground">@{user?.email?.split("@")[0] ?? "user"}</p>
           </div>
         </div>
         <button
@@ -93,9 +91,7 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
             i
           </span>
         </div>
-        <button
-          className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-        >
+        <button className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground">
           Top Up <span className="text-[10px]">›</span>
         </button>
       </div>
@@ -113,9 +109,7 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
                 Insufficient credits
               </span>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Your credit balance : 0
-            </p>
+            <p className="text-[11px] text-muted-foreground">Your credit balance : 0</p>
           </div>
           <button
             className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white"
@@ -133,21 +127,31 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
         </div>
       )}
 
-      {/* Active jobs list */}
-      {activeJobs.length > 0 && (
+      {/* Jobs list — active + completed */}
+      {hasAnyJobs && (
         <div className="px-3 py-1">
+          {/* Active jobs */}
           {activeJobs.map((job, i) => (
-            <JobItem
+            <ActiveJobItem
               key={job.jobId}
               job={job}
               version={`v${i + 1}`}
-              isLast={i === activeJobs.length - 1}
+              isLast={i === activeJobs.length - 1 && recentCompleted.length === 0}
+            />
+          ))}
+
+          {/* Completed jobs */}
+          {recentCompleted.map((job, i) => (
+            <CompletedJobItem
+              key={job.jobId}
+              job={job}
+              isLast={i === recentCompleted.length - 1}
             />
           ))}
         </div>
       )}
 
-      {/* Server busy error (static, shown when queue is active) */}
+      {/* Server busy banner */}
       {activeJobs.some((j) => j.status === "QUEUED" || j.status === "DISPATCHED") && (
         <div
           className="mx-3 mb-2.5 rounded-[10px] border p-2.5"
@@ -159,15 +163,7 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
               Oops! Server busy.
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            Processing your request.{" "}
-            <span
-              className="cursor-pointer underline"
-              style={{ color: "#e8820c" }}
-            >
-              Retry
-            </span>
-          </p>
+          <p className="text-[11px] text-muted-foreground">Processing your request.</p>
         </div>
       )}
 
@@ -185,21 +181,25 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
   );
 }
 
-const JOB_GRADIENTS = [
+// ─── Shared ───────────────────────────────────────────────────────────────────
+
+const GRADIENTS = [
   "linear-gradient(135deg, #1a1a3e, #3a1a5c)",
   "linear-gradient(135deg, #3e1a1a, #5c1a3a)",
   "linear-gradient(135deg, #1a3e1a, #1a5c3a)",
+  "linear-gradient(135deg, #3a2a1a, #5c4a2e)",
+  "linear-gradient(135deg, #1a2a3e, #1a3a5c)",
 ];
 
-function JobItem({
-  job,
-  version,
-  isLast,
-}: {
-  job: JobEvent;
-  version: string;
-  isLast: boolean;
-}) {
+function gradientFor(promptId: string): string {
+  let h = 0;
+  for (let i = 0; i < promptId.length; i++) h = (h * 31 + promptId.charCodeAt(i)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
+
+// ─── Active job row ───────────────────────────────────────────────────────────
+
+function ActiveJobItem({ job, version, isLast }: { job: JobEvent; version: string; isLast: boolean }) {
   const [progress, setProgress] = useState(job.progress ?? 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -208,60 +208,110 @@ function JobItem({
     let p = 0;
     intervalRef.current = setInterval(() => {
       p += 1.4;
-      if (p >= 85) {
-        clearInterval(intervalRef.current!);
-        setProgress(85);
-        return;
-      }
+      if (p >= 85) { clearInterval(intervalRef.current!); setProgress(85); return; }
       setProgress(p);
     }, 50);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [job.status]);
-
-  const displayProgress = Math.round(progress);
 
   const statusText =
     job.status === "QUEUED" || job.status === "DISPATCHED"
       ? "Waiting in queue…"
-      : job.status === "PROCESSING"
-      ? "Processing your audio..."
-      : job.message ?? job.status;
+      : "Processing your audio...";
 
   return (
     <div
       className="flex items-center gap-2.5 py-2"
       style={{ borderBottom: isLast ? "none" : "1px solid #1f1f1f" }}
     >
-      {/* Thumbnail with progress */}
       <div
         className="relative size-12 shrink-0 overflow-hidden rounded-lg"
-        style={{ background: JOB_GRADIENTS[0] }}
+        style={{ background: gradientFor(job.promptId) }}
       >
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.45)" }}
-        >
-          <span className="text-[13px] font-bold text-white">{displayProgress}%</span>
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+          <span className="text-[13px] font-bold text-white">{Math.round(progress)}%</span>
         </div>
       </div>
-
       <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-[12px]"
-          style={{ color: "#f0f0f0", marginBottom: 3 }}
-        >
-          {job.message ?? `Job ${job.jobId.slice(0, 8)}`}
+        <p className="truncate text-[12px]" style={{ color: "#f0f0f0", marginBottom: 3 }}>
+          {job.message ?? getSongName(job.promptId)}
         </p>
         <p className="text-[11px] text-muted-foreground">{statusText}</p>
       </div>
-
       <span
         className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
         style={{ background: "#1c1c1c", color: "#7a7a7a", border: "1px solid #2a2a2a" }}
       >
         {version}
+      </span>
+    </div>
+  );
+}
+
+// ─── Completed job row ────────────────────────────────────────────────────────
+
+function CompletedJobItem({ job, isLast }: { job: JobEvent; isLast: boolean }) {
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const songName = getSongName(job.promptId);
+  const subtitle = job.message
+    ? job.message.length > 40 ? job.message.slice(0, 40) + "…" : job.message
+    : songName;
+
+  const togglePlay = () => {
+    if (!job.audioUrl) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio(job.audioUrl);
+      audioRef.current.onended = () => setPlaying(false);
+    }
+    if (playing) { audioRef.current.pause(); setPlaying(false); }
+    else { audioRef.current.play().catch(() => setPlaying(false)); setPlaying(true); }
+  };
+
+  return (
+    <div
+      className="group flex items-center gap-2.5 py-2"
+      style={{ borderBottom: isLast ? "none" : "1px solid #1f1f1f" }}
+    >
+      {/* Thumbnail + play on hover */}
+      <button
+        onClick={togglePlay}
+        className="relative size-12 shrink-0 overflow-hidden rounded-lg"
+        style={{ background: gradientFor(job.promptId) }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100" style={{ background: "rgba(0,0,0,0.5)" }}>
+          {playing ? (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
+              <rect x="1" y="1" width="4" height="10" rx="1" />
+              <rect x="7" y="1" width="4" height="10" rx="1" />
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
+              <path d="M2 1L11 6L2 11V1Z" />
+            </svg>
+          )}
+        </div>
+        {/* Completed dot */}
+        <div
+          className="absolute bottom-1 right-1 size-1.5 rounded-full"
+          style={{ background: "#4ade80" }}
+        />
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12px] font-medium" style={{ color: "#f0f0f0", marginBottom: 3 }}>
+          {songName}
+        </p>
+        <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
+      </div>
+
+      {/* Checkmark badge */}
+      <span
+        className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+        style={{ background: "#0d2818", color: "#4ade80", border: "1px solid #1a4a2a" }}
+      >
+        done
       </span>
     </div>
   );

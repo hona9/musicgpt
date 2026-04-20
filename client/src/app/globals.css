@@ -90,6 +90,18 @@
   --orange-glow:          rgba(232, 130, 12, 0.4);
 }
 
+/* ─── Animatable CSS Custom Properties (Houdini @property) ──────────────── */
+@property --glow-pos {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+@property --glow-color {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #FF7B16;
+}
+
 /* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @layer base {
   @keyframes spin-ring {
@@ -97,17 +109,14 @@
     to   { transform: rotate(360deg); }
   }
 
-  @keyframes window-sweep {
-    0%   { clip-path: inset(0 100% 0 0    round 14px); }
-    12%  { clip-path: inset(0 68%  0 0    round 14px); }
-    50%  { clip-path: inset(0 34%  0 34%  round 14px); }
-    88%  { clip-path: inset(0 0    0 68%  round 14px); }
-    100% { clip-path: inset(0 0    0 100% round 14px); }
-  }
-
-  @keyframes bloom-sweep {
-    0%   { background-position: -60% 0; }
-    100% { background-position: 160% 0; }
+  @keyframes glow-frames {
+    /* 4 frames × 450ms = 1800ms total */
+    0%    { --glow-pos: 0.35%;   --glow-color: #FF7B16; }     /* Frame 1: orange left  */
+    25%   { --glow-pos: 48.35%;  --glow-color: #EA2EFF; }     /* Frame 2: purple center */
+    50%   { --glow-pos: 104.71%; --glow-color: #FF7B16; }     /* Frame 3: orange right  */
+    75%   { --glow-pos: 104.71%; --glow-color: transparent; } /* Frame 4: dark          */
+    75.1% { --glow-pos: 0.35%;   --glow-color: transparent; } /* position resets while invisible */
+    100%  { --glow-pos: 0.35%;   --glow-color: #FF7B16; }     /* back to Frame 1        */
   }
 
   @keyframes bar-bounce {
@@ -138,6 +147,16 @@
   @keyframes pulse-glow {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.4; }
+  }
+
+  @keyframes placeholder-out {
+    from { transform: translateY(0);    opacity: 1; }
+    to   { transform: translateY(-14px); opacity: 0; }
+  }
+
+  @keyframes placeholder-in {
+    from { transform: translateY(14px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
 
   * {
@@ -171,20 +190,27 @@
   .animate-slide-down {
     animation: slide-down 0.18s ease both;
   }
+  .animate-placeholder-out {
+    animation: placeholder-out 0.4s ease forwards;
+  }
+  .animate-placeholder-in {
+    animation: placeholder-in 0.4s ease forwards;
+  }
 }
 
 /* ─── Prompt Box Animated Border ─────────────────────────────────────────── */
 /* These are structural/animation classes that can't be expressed as Tailwind utilities */
 .glow-box {
   position: relative;
-  border-radius: 14px;
+  height: 100%;
+  border-radius: 32px;
   border: 1px solid #252525;
 }
 
 .glow-layer {
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 32px;
   padding: 2px;
   pointer-events: none;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -194,21 +220,21 @@
 }
 
 .glow-layer-static {
-  background: linear-gradient(90deg, #e8820c 0%, #a855f7 50%, #e8820c 100%);
+  background: linear-gradient(90deg, transparent -10%, var(--glow-color) var(--glow-pos), transparent 111%);
   z-index: 1;
-  animation: window-sweep 5s ease-in-out infinite;
+  mix-blend-mode: screen;
+  opacity: 0.54;
+  animation: glow-frames 1800ms linear infinite;
 }
 
 .glow-layer-bloom {
   position: absolute;
-  inset: -8px;
-  border-radius: 22px;
-  background: linear-gradient(90deg, transparent 0%, #e8820c 30%, #a855f7 50%, #e8820c 70%, transparent 100%);
-  background-size: 60% 100%;
-  background-repeat: no-repeat;
-  filter: blur(18px);
-  opacity: 0.45;
-  animation: bloom-sweep 5s ease-in-out infinite;
+  inset: 16px -4px;
+  border-radius: 42px;
+  background: linear-gradient(90deg, transparent -10%, var(--glow-color) var(--glow-pos), transparent 111%);
+  filter: blur(24px);
+  opacity: 0.54;
+  animation: glow-frames 1800ms linear infinite;
   z-index: 0;
   pointer-events: none;
 }
@@ -216,7 +242,11 @@
 .glow-box-inner {
   position: relative;
   z-index: 3;
-  border-radius: 11px;
+  height: 100%;
+  border-radius: 30px;
   overflow: hidden;
   background: #161616;
+  backdrop-filter: blur(24px);
+  display: flex;
+  flex-direction: column;
 }
