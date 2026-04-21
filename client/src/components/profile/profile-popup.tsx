@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useAuthStore } from "@/store/auth.store";
 import { useJobsStore, ACTIVE_STATUSES } from "@/store/jobs.store";
 import { useLogout } from "@/hooks/use-auth";
@@ -17,7 +18,7 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
   const recentCompleted = useJobsStore((s) => s.recentCompleted);
   const clearUnread = useJobsStore((s) => s.clearUnread);
   const activeJobs = Object.values(jobs).filter((j) => ACTIVE_STATUSES.includes(j.status));
-  const [alertVisible, setAlertVisible] = useState(true);
+  const failedJobs = Object.values(jobs).filter((j) => j.status === "FAILED");
   const logout = useLogout();
 
   useEffect(() => { clearUnread(); }, [clearUnread]);
@@ -35,144 +36,108 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
-  const hasAnyJobs = activeJobs.length > 0 || recentCompleted.length > 0;
+  const hasAnyJobs = activeJobs.length > 0 || failedJobs.length > 0 || recentCompleted.length > 0;
 
   return (
     <div
       ref={popupRef}
-      className="absolute right-0 top-11 z-50 w-[320px] overflow-hidden rounded-[14px] border animate-slide-down"
+      className="absolute right-0 top-11 z-50 w-[400px] overflow-hidden rounded-[20px] animate-slide-down"
       style={{
-        background: "#1a1612",
-        borderColor: "#2e2820",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
+        background: "rgba(22,25,28,1)",
+        boxShadow: "0px 0px 24px rgba(0,0,0,0.48)",
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pb-3 pt-4">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between px-4 pt-5 pb-3">
+        <div className="flex items-center gap-3">
+          {/* Avatar — solid gradient circle */}
           <div
-            className="flex size-11 items-center justify-center rounded-full text-[17px] font-bold"
+            className="flex size-[60px] shrink-0 items-center justify-center rounded-full text-[20px] font-medium text-white"
             style={{
-              background:
-                "linear-gradient(#1a1612, #1a1612) padding-box, linear-gradient(314.53deg, #C800FF, #FF2C9B, #FF7B00, #FF8504, #FFD363) border-box",
-              border: "2px solid transparent",
-              boxShadow: "0px 4px 32.6px -13px rgba(200,0,255,0.8)",
+              background: "linear-gradient(180deg, rgba(199,0,255,1), rgba(255,44,155,1))",
             }}
           >
             {initial}
           </div>
           <div>
-            <p className="text-[14px] font-semibold">{user?.email?.split("@")[0] ?? "User"}</p>
-            <p className="text-[12px] text-muted-foreground">@{user?.email?.split("@")[0] ?? "user"}</p>
+            <p className="text-[16px] font-medium" style={{ color: "rgba(228,230,232,1)" }}>
+              {user?.email?.split("@")[0] ?? "User"}
+            </p>
+            <p className="text-[14px]" style={{ color: "rgba(137,140,146,1)" }}>
+              @{user?.email?.split("@")[0] ?? "user"}
+            </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+          className="rounded-md p-1 transition-colors"
+          style={{ color: "rgba(119,122,128,1)" }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#444" />
-            <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
       </div>
 
-      {/* Credits row */}
-      <div
-        className="flex items-center justify-between px-4 py-2.5"
-        style={{ borderTop: "1px solid #2a2218", borderBottom: "1px solid #2a2218" }}
-      >
-        <div className="flex items-center gap-1.5">
-          <span className="text-[14px] font-semibold">0/0 credits</span>
-          <span
-            className="inline-flex size-3.5 items-center justify-center rounded-full border text-[9px] leading-none"
-            style={{ borderColor: "#4a4a4a", color: "#4a4a4a" }}
-          >
-            i
-          </span>
-        </div>
-        <button className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground">
-          Top Up <span className="text-[10px]">›</span>
-        </button>
-      </div>
-
-      {/* Insufficient credits alert */}
-      {alertVisible && (
+      {/* Credits card */}
+      <div className="mx-4 mb-3">
         <div
-          className="mx-3 mt-2.5 flex items-center justify-between gap-2.5 rounded-[10px] border p-3"
-          style={{ background: "#2a1e0e", borderColor: "#4a3010" }}
+          className="flex h-[50px] items-center justify-between rounded-[12px] px-4"
+          style={{ background: "rgba(33,37,41,1)" }}
         >
-          <div className="flex-1">
-            <div className="mb-0.5 flex items-center gap-1.5">
-              <span className="text-[12px]">⚠️</span>
-              <span className="text-[12px] font-semibold" style={{ color: "#f59e0b" }}>
-                Insufficient credits
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground">Your credit balance : 0</p>
-          </div>
-          <button
-            className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white"
-            style={{ background: "#e8820c" }}
-          >
-            Top Up
-          </button>
-          <button
-            onClick={() => setAlertVisible(false)}
-            className="shrink-0 text-[14px] leading-none transition-colors hover:text-foreground"
-            style={{ color: "#4a4a4a" }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* Jobs list — active + completed */}
-      {hasAnyJobs && (
-        <div className="px-3 py-1">
-          {/* Active jobs */}
-          {activeJobs.map((job, i) => (
-            <ActiveJobItem
-              key={job.jobId}
-              job={job}
-              version={`v${i + 1}`}
-              isLast={i === activeJobs.length - 1 && recentCompleted.length === 0}
-            />
-          ))}
-
-          {/* Completed jobs */}
-          {recentCompleted.map((job, i) => (
-            <CompletedJobItem
-              key={job.jobId}
-              job={job}
-              isLast={i === recentCompleted.length - 1}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Server busy banner */}
-      {activeJobs.some((j) => j.status === "QUEUED" || j.status === "DISPATCHED") && (
-        <div
-          className="mx-3 mb-2.5 rounded-[10px] border p-2.5"
-          style={{ background: "#1e1010", borderColor: "#3a1515" }}
-        >
-          <div className="mb-0.5 flex items-center gap-1.5">
-            <span className="text-[11px]">⚠️</span>
-            <span className="text-[12px] font-medium" style={{ color: "#f87171" }}>
-              Oops! Server busy.
+          <div className="flex items-center gap-1.5">
+            <span className="text-[14px] font-semibold" style={{ color: "rgba(228,230,232,1)" }}>
+              0/0 credits
+            </span>
+            <span
+              className="inline-flex size-[18px] items-center justify-center rounded-full border text-[10px] leading-none"
+              style={{ borderColor: "rgba(119,122,128,1)", color: "rgba(119,122,128,1)" }}
+            >
+              i
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground">Processing your request.</p>
+          <button
+            className="flex items-center gap-1 text-[14px] font-medium"
+            style={{ color: "rgba(119,122,128,1)" }}
+          >
+            Top Up
+            <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
+              <path d="M1 1L5 5L1 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid rgba(48,52,56,1)" }} />
+
+      {/* Jobs list */}
+      {hasAnyJobs && (
+        <div className="px-4 py-2">
+          {activeJobs.map((job) => (
+            <ActiveJobItem key={job.jobId} job={job} />
+          ))}
+          {failedJobs.map((job) => (
+            <FailedJobItem key={job.jobId} job={job} onDismiss={() => useJobsStore.getState().removeJob(job.jobId)} />
+          ))}
+          {recentCompleted.map((job) => (
+            <CompletedJobItem key={job.jobId} job={job} />
+          ))}
         </div>
       )}
 
+      {/* Divider */}
+      {hasAnyJobs && <div style={{ borderTop: "1px solid rgba(48,52,56,1)" }} />}
+
       {/* Logout */}
-      <div style={{ borderTop: "1px solid #2a2218" }} className="px-4 py-3">
+      <div className="px-4 py-3">
         <button
           onClick={() => logout.mutate()}
           disabled={logout.isPending}
-          className="w-full rounded-lg py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-[#2a2218] hover:text-foreground disabled:opacity-50"
+          className="w-full rounded-lg py-2 text-[13px] font-medium transition-colors disabled:opacity-50"
+          style={{ color: "rgba(137,140,146,1)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(228,230,232,1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(137,140,146,1)")}
         >
           {logout.isPending ? "Signing out…" : "Sign out"}
         </button>
@@ -197,66 +162,127 @@ function gradientFor(promptId: string): string {
   return GRADIENTS[h % GRADIENTS.length];
 }
 
-// ─── Active job row ───────────────────────────────────────────────────────────
+// ─── Failed job card ──────────────────────────────────────────────────────────
 
-function ActiveJobItem({ job, version, isLast }: { job: JobEvent; version: string; isLast: boolean }) {
-  const [progress, setProgress] = useState(job.progress ?? 0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+function FailedJobItem({ job, onDismiss }: { job: JobEvent; onDismiss: () => void }) {
+  const isInvalidPrompt = job.errorMessage?.toLowerCase().includes("valid") ?? false;
 
-  useEffect(() => {
-    if (job.status !== "PROCESSING") return;
-    let p = 0;
-    intervalRef.current = setInterval(() => {
-      p += 1.4;
-      if (p >= 85) { clearInterval(intervalRef.current!); setProgress(85); return; }
-      setProgress(p);
-    }, 50);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [job.status]);
+  if (!isInvalidPrompt) {
+    // Red "Oops! Server busy" card
+    return (
+      <div
+        className="my-2 flex items-start justify-between gap-3 rounded-[12px] p-3"
+        style={{ background: "#EE0D3714" }}
+      >
+        <div className="flex items-start gap-2">
+          <Image src="/icons/exclamation.svg" alt="" width={18} height={18} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="text-[13px] font-semibold" style={{ color: "#EE0D37" }}>
+              Oops! Server busy.
+            </p>
+            <p className="mt-0.5 text-[12px]" style={{ color: "rgba(137,140,146,1)" }}>
+              {job.errorMessage ?? "Could not process your request. Please try again."}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="shrink-0 text-[16px] leading-none transition-colors"
+          style={{ color: "rgba(93,97,101,1)" }}
+        >
+          ×
+        </button>
+      </div>
+    );
+  }
 
-  const statusText =
-    job.status === "QUEUED" || job.status === "DISPATCHED"
-      ? "Waiting in queue…"
-      : "Processing your audio...";
-
+  // Orange "Invalid Prompt" card
   return (
     <div
-      className="flex items-center gap-2.5 py-2"
-      style={{ borderBottom: isLast ? "none" : "1px solid #1f1f1f" }}
+      className="my-2 flex gap-3 rounded-[12px] p-3"
+      style={{ background: "rgba(29,33,37,1)" }}
     >
       <div
-        className="relative size-12 shrink-0 overflow-hidden rounded-lg"
-        style={{ background: gradientFor(job.promptId) }}
+        className="flex size-[60px] shrink-0 items-center justify-center rounded-[16px] text-[32px]"
+        style={{ background: "#D89C3A" }}
       >
-        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-          <span className="text-[13px] font-bold text-white">{Math.round(progress)}%</span>
-        </div>
+        <span className="text-[32px] leading-none">🥲</span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px]" style={{ color: "#f0f0f0", marginBottom: 3 }}>
-          {job.message ?? getSongName(job.promptId)}
+        <p className="text-[14px] font-semibold text-white">Invalid Prompt</p>
+        <p className="mt-0.5 text-[12px]" style={{ color: "rgba(93,97,101,1)" }}>
+          {job.message && job.message.length > 35 ? job.message.slice(0, 35) + "…" : job.message}
         </p>
-        <p className="text-[11px] text-muted-foreground">{statusText}</p>
+        <p className="mt-1.5 text-[13px] font-medium" style={{ color: "rgba(228,230,232,1)" }}>
+          {job.errorMessage}
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            className="rounded-[8px] px-3 py-1.5 text-[12px] font-semibold text-white"
+            style={{ background: "rgba(255,97,0,1)" }}
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onDismiss}
+            className="rounded-[8px] px-3 py-1.5 text-[12px] font-medium"
+            style={{ color: "rgba(137,140,146,1)" }}
+          >
+            Dismiss
+          </button>
+        </div>
       </div>
-      <span
-        className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-        style={{ background: "#1c1c1c", color: "#7a7a7a", border: "1px solid #2a2a2a" }}
+    </div>
+  );
+}
+
+// ─── Active job row ───────────────────────────────────────────────────────────
+
+function ActiveJobItem({ job }: { job: JobEvent }) {
+  const isQueued = job.status === "QUEUED" || job.status === "DISPATCHED";
+  const songName = getSongName(job.promptId);
+
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      {/* Thumbnail */}
+      <div
+        className="relative size-[64px] shrink-0 overflow-hidden rounded-[16px]"
+        style={{ background: gradientFor(job.promptId) }}
       >
-        {version}
-      </span>
+        {/* Pulsing overlay for processing */}
+        {!isQueued && (
+          <div
+            className="absolute inset-0 animate-pulse"
+            style={{ background: "rgba(255,255,255,0.05)" }}
+          />
+        )}
+      </div>
+
+      {/* Text */}
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <p
+          className="truncate text-[16px]"
+          style={{ color: isQueued ? "rgba(93,97,101,1)" : "rgba(191,194,200,1)" }}
+        >
+          {job.message ?? songName}
+        </p>
+        <p className="mt-0.5 text-[14px]" style={{ color: "rgba(93,97,101,1)" }}>
+          {isQueued ? "Waiting in queue…" : "Starting AI audio engine"}
+        </p>
+      </div>
     </div>
   );
 }
 
 // ─── Completed job row ────────────────────────────────────────────────────────
 
-function CompletedJobItem({ job, isLast }: { job: JobEvent; isLast: boolean }) {
+function CompletedJobItem({ job }: { job: JobEvent }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const songName = getSongName(job.promptId);
   const subtitle = job.message
-    ? job.message.length > 40 ? job.message.slice(0, 40) + "…" : job.message
+    ? job.message.length > 45 ? job.message.slice(0, 45) + "…" : job.message
     : songName;
 
   const togglePlay = () => {
@@ -270,49 +296,73 @@ function CompletedJobItem({ job, isLast }: { job: JobEvent; isLast: boolean }) {
   };
 
   return (
-    <div
-      className="group flex items-center gap-2.5 py-2"
-      style={{ borderBottom: isLast ? "none" : "1px solid #1f1f1f" }}
-    >
-      {/* Thumbnail + play on hover */}
+    <div className="flex items-center gap-3 py-2.5">
+      {/* Thumbnail with gradient overlay + play icon */}
       <button
         onClick={togglePlay}
-        className="relative size-12 shrink-0 overflow-hidden rounded-lg"
+        className="relative size-[64px] shrink-0 overflow-hidden rounded-[16px]"
         style={{ background: gradientFor(job.promptId) }}
       >
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100" style={{ background: "rgba(0,0,0,0.5)" }}>
+        {/* Bottom gradient overlay */}
+        <div
+          className="absolute inset-0 rounded-[16px]"
+          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.75))" }}
+        />
+        {/* Play / pause icon — always visible */}
+        <div className="absolute inset-0 flex items-center justify-center">
           {playing ? (
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
-              <rect x="1" y="1" width="4" height="10" rx="1" />
-              <rect x="7" y="1" width="4" height="10" rx="1" />
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+              <rect x="3" y="3" width="5" height="14" rx="1.5" />
+              <rect x="12" y="3" width="5" height="14" rx="1.5" />
             </svg>
           ) : (
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="white">
-              <path d="M2 1L11 6L2 11V1Z" />
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+              <path d="M5 3L17 10L5 17V3Z" />
             </svg>
           )}
         </div>
-        {/* Completed dot */}
-        <div
-          className="absolute bottom-1 right-1 size-1.5 rounded-full"
-          style={{ background: "#4ade80" }}
-        />
       </button>
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-medium" style={{ color: "#f0f0f0", marginBottom: 3 }}>
+      {/* Text */}
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <p className="truncate text-[16px]" style={{ color: "rgba(228,230,232,1)" }}>
           {songName}
         </p>
-        <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
+        <p className="mt-0.5 truncate text-[14px]" style={{ color: "rgba(137,140,146,1)" }}>
+          {subtitle}
+        </p>
       </div>
 
-      {/* Checkmark badge */}
-      <span
-        className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-        style={{ background: "#0d2818", color: "#4ade80", border: "1px solid #1a4a2a" }}
-      >
-        done
-      </span>
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1">
+        {/* Three-dot menu */}
+        <button
+          className="flex size-[32px] items-center justify-center rounded-full transition-colors"
+          style={{ color: "rgba(137,140,146,1)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(48,52,56,1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="8" cy="3" r="1.5" />
+            <circle cx="8" cy="8" r="1.5" />
+            <circle cx="8" cy="13" r="1.5" />
+          </svg>
+        </button>
+        {/* Share */}
+        <button
+          className="flex size-[32px] items-center justify-center rounded-full transition-colors"
+          style={{ color: "rgba(137,140,146,1)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(48,52,56,1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="13" cy="3" r="1.5" />
+            <circle cx="3" cy="8" r="1.5" />
+            <circle cx="13" cy="13" r="1.5" />
+            <path d="M4.5 7.2L11.5 4M4.5 8.8L11.5 12" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

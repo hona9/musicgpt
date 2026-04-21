@@ -24,6 +24,28 @@ export default function HomePage() {
   const handleSubmit = useCallback(async () => {
     if (!promptText.trim() || createPrompt.isPending) return;
     const text = promptText.trim();
+
+    // ── Test simulations ──────────────────────────────────────────────────────
+    if (text === "error") {
+      const jobId = `sim-error-${Date.now()}`;
+      const promptId = `sim-prompt-${Date.now()}`;
+      setJobEvent({ jobId, promptId, status: "QUEUED", message: text });
+      setPromptText("");
+      setShowProfile(true);
+      setTimeout(() => setJobEvent({ jobId, promptId, status: "PROCESSING", message: text }), 1200);
+      setTimeout(() => setJobEvent({ jobId, promptId, status: "FAILED", message: text, errorMessage: "An unexpected server error occurred. Please try again." }), 3500);
+      return;
+    }
+    if (text === "invalid") {
+      const jobId = `sim-invalid-${Date.now()}`;
+      const promptId = `sim-prompt-${Date.now()}`;
+      setJobEvent({ jobId, promptId, status: "FAILED", message: text, errorMessage: "Your prompt does not seem to be valid. Please provide a prompt related to song creation, remixing, covers, or similar music tasks." });
+      setPromptText("");
+      setShowProfile(true);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     try {
       const result = await createPrompt.mutateAsync(text);
       setJobEvent({ jobId: result.jobId, promptId: result.promptId, status: "QUEUED", message: text });
