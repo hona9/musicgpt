@@ -8,6 +8,7 @@ export interface CreateGenerationJobData {
 }
 
 export interface UpdateStatusExtra {
+  title?: string;
   audioUrl?: string;
   errorMessage?: string;
 }

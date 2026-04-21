@@ -23,6 +23,7 @@ export interface GenerationJob {
   id: string;
   promptId: string;
   status: JobStatus;
+  title: string | null;
   audioUrl: string | null;
   errorMessage: string | null;
   createdAt: string;
@@ -105,9 +106,8 @@ export interface CreatePromptResponse {
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 export interface SearchResult {
-  users: User[];
-  prompts: PromptWithJob[];
-  nextCursor: string | null;
+  users: { items: User[]; nextCursor: string | null };
+  prompts: { items: PromptWithJob[]; nextCursor: string | null };
 }
 
 // ─── API Envelope ─────────────────────────────────────────────────────────────
@@ -129,6 +129,7 @@ export interface JobEvent {
   jobId: string;
   promptId: string;
   status: JobStatus;
+  title?: string | null;
   audioUrl?: string | null;
   errorMessage?: string | null;
   progress?: number;

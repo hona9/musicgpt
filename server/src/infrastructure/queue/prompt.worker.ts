@@ -7,6 +7,7 @@ import { NotificationRepository } from "../repositories/NotificationRepository";
 import { socketIOService } from "../services/SocketIOService";
 import { cacheService } from "../services/CacheService";
 import { JobStatus } from "../../shared/types/enums";
+import { pickSongTitle } from "../../shared/utils/song-names";
 
 const generationJobRepository = new GenerationJobRepository();
 const notificationRepository = new NotificationRepository();
@@ -20,15 +21,16 @@ async function processGenerationJob(job: Job<PromptJobData>): Promise<void> {
   const generationJobId = job.id!;
   const { promptId, userId } = job.data;
 
-  await generationJobRepository.updateStatus(generationJobId, JobStatus.PROCESSING);
-  socketIOService.emitToUser(userId, { jobId: generationJobId, promptId, userId, status: "job:processing" });
+  const title = pickSongTitle();
+  await generationJobRepository.updateStatus(generationJobId, JobStatus.PROCESSING, { title });
+  socketIOService.emitToUser(userId, { jobId: generationJobId, promptId, userId, status: "job:processing", title });
 
   await delay(5000 + Math.random() * 5000);
 
   const audioUrl = `https://cdn.musicgpt.fake/audio/${promptId}.mp3`;
   await generationJobRepository.updateStatus(generationJobId, JobStatus.COMPLETED, { audioUrl });
 
-  socketIOService.emitToUser(userId, { jobId: generationJobId, promptId, userId, status: "job:completed", audioUrl });
+  socketIOService.emitToUser(userId, { jobId: generationJobId, promptId, userId, status: "job:completed", title, audioUrl });
 
   await notificationRepository.create(userId, promptId, "Your track is ready!");
 

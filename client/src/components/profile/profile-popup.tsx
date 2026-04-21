@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useAuthStore } from "@/store/auth.store";
 import { useJobsStore, ACTIVE_STATUSES } from "@/store/jobs.store";
 import { useLogout } from "@/hooks/use-auth";
-import { getSongName } from "@/lib/song-names";
+import { getSongName } from "@/lib/song-names"; // fallback for jobs that pre-date server-side titles
 import type { JobEvent } from "@/types/api.types";
 
 interface ProfilePopupProps {
@@ -238,36 +238,70 @@ function FailedJobItem({ job, onDismiss }: { job: JobEvent; onDismiss: () => voi
 
 // ─── Active job row ───────────────────────────────────────────────────────────
 
+const PROCESSING_DURATION_MS = 10_000; // matches server max delay
+
 function ActiveJobItem({ job }: { job: JobEvent }) {
   const isQueued = job.status === "QUEUED" || job.status === "DISPATCHED";
-  const songName = getSongName(job.promptId);
+  const isProcessing = job.status === "PROCESSING";
+
+  const [pct, setPct] = useState(0);
+  const startRef = useRef<number | null>(null);
+
+  const tick = useCallback(() => {
+    if (!startRef.current) startRef.current = Date.now();
+    const elapsed = Date.now() - startRef.current;
+    const next = Math.min(85, Math.round((elapsed / PROCESSING_DURATION_MS) * 85));
+    setPct(next);
+    if (next < 85) requestAnimationFrame(tick);
+  }, []);
+
+  useEffect(() => {
+    if (!isProcessing) return;
+    startRef.current = null;
+    const raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isProcessing, tick]);
 
   return (
-    <div className="flex items-center gap-3 py-2.5">
-      {/* Thumbnail */}
-      <div
-        className="relative size-[64px] shrink-0 overflow-hidden rounded-[16px]"
-        style={{ background: gradientFor(job.promptId) }}
-      >
-        {/* Pulsing overlay for processing */}
-        {!isQueued && (
-          <div
-            className="absolute inset-0 animate-pulse"
-            style={{ background: "rgba(255,255,255,0.05)" }}
-          />
-        )}
+    <div className="relative flex items-center gap-3 overflow-hidden rounded-[12px] py-2.5 px-2 -mx-2">
+      {/* Row-wide progress background fill */}
+      {isProcessing && (
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[12px]"
+          style={{
+            background: `linear-gradient(90deg, rgba(255,255,255,0.06) ${pct}%, transparent ${pct}%)`,
+            transition: "background 0.1s linear",
+          }}
+        />
+      )}
+
+      {/* Thumbnail with spinning gradient border + percentage */}
+      <div className="thumb-border-spin relative z-10 shrink-0 rounded-[17px] p-px">
+        <div
+          className="relative flex size-[62px] items-center justify-center overflow-hidden rounded-[16px]"
+          style={{ background: gradientFor(job.promptId) }}
+        >
+          {isProcessing && (
+            <span className="text-[13px] font-semibold text-white" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+              {pct}%
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Text */}
-      <div className="min-w-0 flex-1 overflow-hidden">
+      <div className="relative z-10 min-w-0 flex-1 overflow-hidden">
         <p
           className="truncate text-[16px]"
-          style={{ color: isQueued ? "rgba(93,97,101,1)" : "rgba(191,194,200,1)" }}
+          style={{
+            color: "rgba(191,194,200,1)",
+            animation: "pulse-opacity 1.8s ease-in-out infinite",
+          }}
         >
-          {job.message ?? songName}
+          {job.message ?? ""}
         </p>
-        <p className="mt-0.5 text-[14px]" style={{ color: "rgba(93,97,101,1)" }}>
-          {isQueued ? "Waiting in queue…" : "Starting AI audio engine"}
+        <p className="mt-1 text-[13px]" style={{ color: "rgba(93,97,101,1)" }}>
+          {isQueued ? "Waiting in queue…" : "Generating"}
         </p>
       </div>
     </div>
@@ -280,7 +314,7 @@ function CompletedJobItem({ job }: { job: JobEvent }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const songName = getSongName(job.promptId);
+  const songName = job.title ?? getSongName(job.promptId);
   const subtitle = job.message
     ? job.message.length > 45 ? job.message.slice(0, 45) + "…" : job.message
     : songName;

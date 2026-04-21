@@ -6,6 +6,7 @@ export interface GenerationJobEntity {
   userId: string;
   status: JobStatus;
   priority: number;
+  title: string | null;
   audioUrl: string | null;
   errorMessage: string | null;
   createdAt: Date;

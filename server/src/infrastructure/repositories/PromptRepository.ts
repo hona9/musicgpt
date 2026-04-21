@@ -75,6 +75,7 @@ export class PromptRepository implements IPromptRepository {
       userId: string;
       status: JobStatus;
       priority: number;
+      title: string | null;
       audioUrl: string | null;
       errorMessage: string | null;
       createdAt: Date;
@@ -88,6 +89,7 @@ export class PromptRepository implements IPromptRepository {
           userId: row.job.userId,
           status: row.job.status,
           priority: row.job.priority,
+          title: row.job.title,
           audioUrl: row.job.audioUrl,
           errorMessage: row.job.errorMessage,
           createdAt: row.job.createdAt,

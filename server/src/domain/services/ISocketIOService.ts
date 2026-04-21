@@ -5,6 +5,7 @@ export interface WsJobEvent {
   promptId: string;
   userId: string;
   status: WsEventName;
+  title?: string;
   audioUrl?: string;
   errorMessage?: string;
 }

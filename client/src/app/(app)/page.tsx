@@ -14,6 +14,7 @@ export default function HomePage() {
 
   const user = useAuthStore((s) => s.user);
   const setJobEvent = useJobsStore((s) => s.setJobEvent);
+  const removeJob = useJobsStore((s) => s.removeJob);
   const jobs = useJobsStore((s) => s.jobs);
   const unreadCount = useJobsStore((s) => s.unreadCount);
   const activeJobs = Object.values(jobs).filter((j) => ACTIVE_STATUSES.includes(j.status));
@@ -46,15 +47,23 @@ export default function HomePage() {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Seed immediately so the popup shows the pulsating row right away
+    const tempId = `temp-${Date.now()}`;
+    setJobEvent({ jobId: tempId, promptId: tempId, status: "QUEUED", message: text });
+    setPromptText("");
+    setShowProfile(true);
+
     try {
       const result = await createPrompt.mutateAsync(text);
+      removeJob(tempId);
       setJobEvent({ jobId: result.jobId, promptId: result.promptId, status: "QUEUED", message: text });
-      setPromptText("");
-      setShowProfile(true);
-    } catch {
-      // error surfaced via createPrompt.error below
+    } catch (err) {
+      const apiMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Failed to submit. Please try again.";
+      setJobEvent({ jobId: tempId, promptId: tempId, status: "FAILED", message: text, errorMessage: apiMessage });
     }
-  }, [promptText, createPrompt, setJobEvent]);
+  }, [promptText, createPrompt, setJobEvent, removeJob]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -113,12 +122,6 @@ export default function HomePage() {
               onSubmit={handleSubmit}
               isLoading={createPrompt.isPending}
             />
-            {createPrompt.error && (
-              <p className="mt-3 text-[12px]" style={{ color: "#f87171" }}>
-                {(createPrompt.error as { response?: { data?: { message?: string } } })
-                  ?.response?.data?.message ?? "Failed to submit. Please try again."}
-              </p>
-            )}
           </div>
 
           {/* Recent generations — flows below prompt area */}

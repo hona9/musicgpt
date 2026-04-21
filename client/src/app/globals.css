@@ -101,6 +101,11 @@
   inherits: false;
   initial-value: #FF7B16;
 }
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
 
 /* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @layer base {
@@ -159,6 +164,16 @@
     to   { transform: translateY(0);    opacity: 1; }
   }
 
+  @keyframes thumb-border-spin {
+    to { --border-angle: 360deg; }
+  }
+
+  @keyframes shimmer-slide {
+    from { background-position: -200% center; }
+    to   { background-position:  200% center; }
+  }
+
+
   * {
     @apply border-border outline-ring/50;
   }
@@ -195,6 +210,33 @@
   }
   .animate-placeholder-in {
     animation: placeholder-in 0.4s ease forwards;
+  }
+
+  /* Spinning gradient border for song thumbnails during generation */
+  .thumb-border-spin {
+    animation: thumb-border-spin 2s linear infinite;
+    background: conic-gradient(
+      from var(--border-angle),
+      #FF6200,
+      rgba(170, 0, 255, 0.5),
+      transparent 40%,
+      transparent 60%,
+      rgba(170, 0, 255, 0.5),
+      #FF6200
+    );
+  }
+
+  /* Left-to-right shimmer for text placeholders */
+  .shimmer-text {
+    animation: shimmer-slide 1.4s ease-in-out infinite;
+    background: linear-gradient(
+      90deg,
+      rgba(48, 52, 56, 0.4) 0%,
+      rgba(90, 95, 100, 0.9) 50%,
+      rgba(48, 52, 56, 0.4) 100%
+    );
+    background-size: 200% auto;
+    border-radius: 999px;
   }
 }
 

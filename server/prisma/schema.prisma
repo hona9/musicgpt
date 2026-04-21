@@ -57,6 +57,7 @@ model GenerationJob {
   userId       String // denormalized — avoids join on hot queue-worker poll
   status       JobStatus @default(QUEUED)
   priority     Int       @default(0) // PAID=10, FREE=0; set at insert from user.tier
+  title        String?
   audioUrl     String?
   errorMessage String?
   createdAt    DateTime  @default(now())

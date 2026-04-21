@@ -24,6 +24,7 @@ interface PromptRow {
   jobId: string;
   jobStatus: string;
   jobPriority: number;
+  title: string | null;
   audioUrl: string | null;
   errorMessage: string | null;
   jobCreatedAt: Date;
@@ -64,7 +65,7 @@ export class SearchRepository implements ISearchRepository {
     };
   }
 
-  async searchPrompts(q: string, cursor: CursorData | null, limit: number): Promise<PageResult<PromptWithJobEntity>> {
+  async searchPrompts(q: string, userId: string, cursor: CursorData | null, limit: number): Promise<PageResult<PromptWithJobEntity>> {
     const cursorClause = cursor
       ? Prisma.sql`AND (p."createdAt" < ${cursor.createdAt} OR (p."createdAt" = ${cursor.createdAt} AND p.id < ${cursor.id}))`
       : Prisma.empty;
@@ -75,16 +76,18 @@ export class SearchRepository implements ISearchRepository {
         p."userId",
         p.text,
         p."createdAt",
-        g.id        AS "jobId",
+        g.id           AS "jobId",
         g.status::text AS "jobStatus",
-        g.priority  AS "jobPriority",
+        g.priority     AS "jobPriority",
+        g.title,
         g."audioUrl",
         g."errorMessage",
-        g."createdAt" AS "jobCreatedAt",
-        g."updatedAt" AS "jobUpdatedAt"
+        g."createdAt"  AS "jobCreatedAt",
+        g."updatedAt"  AS "jobUpdatedAt"
       FROM "Prompt" p
       INNER JOIN "GenerationJob" g ON g."promptId" = p.id
       WHERE g.status = 'COMPLETED'
+        AND p."userId" = ${userId}
         AND to_tsvector('english', p.text) @@ websearch_to_tsquery('english', ${q})
         ${cursorClause}
       ORDER BY
@@ -111,6 +114,7 @@ export class SearchRepository implements ISearchRepository {
       userId: r.userId,
       status: r.jobStatus as JobStatus,
       priority: r.jobPriority,
+      title: r.title,
       audioUrl: r.audioUrl,
       errorMessage: r.errorMessage,
       createdAt: r.jobCreatedAt,

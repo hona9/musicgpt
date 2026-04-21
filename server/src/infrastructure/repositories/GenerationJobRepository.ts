@@ -47,6 +47,7 @@ export class GenerationJobRepository implements IGenerationJobRepository {
     userId: string;
     status: JobStatus;
     priority: number;
+    title: string | null;
     audioUrl: string | null;
     errorMessage: string | null;
     createdAt: Date;
@@ -58,6 +59,7 @@ export class GenerationJobRepository implements IGenerationJobRepository {
       userId: job.userId,
       status: job.status,
       priority: job.priority,
+      title: job.title,
       audioUrl: job.audioUrl,
       errorMessage: job.errorMessage,
       createdAt: job.createdAt,

@@ -23,7 +23,7 @@ export const useJobsStore = create<JobsState>()((set) => ({
   unreadCount: 0,
 
   setJobEvent: (event) =>
-    set((s) => ({ jobs: { ...s.jobs, [event.jobId]: event } })),
+    set((s) => ({ jobs: { ...s.jobs, [event.jobId]: { ...s.jobs[event.jobId], ...event } } })),
 
   removeJob: (jobId) =>
     set((s) => {

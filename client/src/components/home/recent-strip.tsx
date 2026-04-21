@@ -66,7 +66,7 @@ function CompletedRow({ prompt, gradient }: { prompt: PromptWithJob; gradient: s
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrl = prompt.job?.audioUrl ?? null;
 
-  const title = deriveTitle(prompt.text);
+  const title = prompt.job?.title ?? deriveTitle(prompt.text);
   const subtitle = prompt.text.length > 80 ? prompt.text.slice(0, 80) + "…" : prompt.text;
 
   const togglePlay = () => {

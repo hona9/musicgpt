@@ -8,7 +8,7 @@ export class SearchController {
 
   search = async (req: Request, res: Response): Promise<void> => {
     const query = SearchSchema.parse(req.query);
-    const result = await this.searchUseCase.execute(query);
+    const result = await this.searchUseCase.execute(query, req.user!.id);
 
     res.status(StatusCodes.OK).json({
       status: "success",

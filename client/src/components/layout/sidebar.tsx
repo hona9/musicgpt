@@ -3,33 +3,165 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useSearch } from "@/hooks/use-search";
+import { useDebounce } from "@/hooks/use-debounce";
 
 // ─── Nav Item ────────────────────────────────────────────────────────────────
 
 interface NavItemProps {
-  href: string;
+  href?: string;
   label: string;
   icon: string;
+  disabled?: boolean;
 }
 
-function NavItem({ href, label, icon }: NavItemProps) {
+function NavItem({ href, label, icon, disabled }: NavItemProps) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = href ? pathname === href : false;
+
+  const className = cn(
+    "flex items-center gap-2 text-[13px] transition-all duration-150",
+    isActive
+      ? "rounded-[30px] h-[37px] px-4 py-[3px] bg-muted font-medium"
+      : "rounded-[30px] h-[37px] px-4 py-[3px] hover:bg-muted/50",
+  );
+
+  if (disabled || !href) {
+    return (
+      <span className={className} style={{ color: "#fff" }}>
+        <Image src={icon} width={16} height={16} alt={label} />
+        {label}
+      </span>
+    );
+  }
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-2 text-[13px] transition-all duration-150",
-        isActive
-          ? "rounded-[30px] h-[37px] px-4 py-[3px] bg-muted font-medium"
-          : "rounded-[30px] h-[37px] px-4 py-[3px] hover:bg-muted/50",
-      )}
-    >
+    <Link href={href} className={className}>
       <Image src={icon} width={16} height={16} alt={label} />
       {label}
     </Link>
+  );
+}
+
+// ─── Search Bar ───────────────────────────────────────────────────────────────
+
+function SearchBar() {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const debouncedQuery = useDebounce(query, 300);
+  const { data, isFetching } = useSearch(debouncedQuery);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const hasResults = data && (data.users.items.length > 0 || data.prompts.items.length > 0);
+  const showDropdown = open && debouncedQuery.trim().length >= 2;
+
+  return (
+    <div ref={containerRef} className="relative px-2.5 pb-4">
+      <div
+        className="flex w-full items-center gap-2 overflow-hidden rounded-full border px-3 py-1.5 text-[12px] transition-colors"
+        style={{
+          background: "#141414",
+          borderColor: open ? "#3a3a3a" : "#2a2a2a",
+        }}
+      >
+        <Image src="/icons/search-md.svg" width={13} height={13} alt="Search" className="shrink-0" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Search"
+          className="min-w-0 flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-[rgba(255,255,255,0.3)]"
+        />
+        {query ? (
+          <button onClick={() => setQuery("")} className="text-[rgba(255,255,255,0.4)] hover:text-white">
+            ×
+          </button>
+        ) : (
+          <span
+            className="shrink-0 rounded px-1 py-px text-[10px]"
+            style={{ background: "#1c1c1c", color: "rgba(255,255,255,0.3)" }}
+          >
+            ⌘K
+          </span>
+        )}
+      </div>
+
+      {/* Dropdown */}
+      {showDropdown && (
+        <div
+          className="absolute left-2.5 right-2.5 top-[calc(100%-8px)] z-50 overflow-hidden rounded-[12px] border py-1.5 shadow-xl"
+          style={{ background: "rgba(22,25,28,1)", borderColor: "rgba(48,52,56,1)" }}
+        >
+          {isFetching && !hasResults && (
+            <p className="px-3 py-2 text-[11px]" style={{ color: "rgba(93,97,101,1)" }}>
+              Searching…
+            </p>
+          )}
+
+          {!isFetching && !hasResults && (
+            <p className="px-3 py-2 text-[11px]" style={{ color: "rgba(93,97,101,1)" }}>
+              No results for &quot;{debouncedQuery}&quot;
+            </p>
+          )}
+
+          {/* Users */}
+          {data && data.users.items.length > 0 && (
+            <>
+              <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(93,97,101,1)" }}>
+                Users
+              </p>
+              {data.users.items.map((u) => (
+                <button
+                  key={u.id}
+                  className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                >
+                  <div
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    style={{ background: "linear-gradient(180deg, rgba(199,0,255,1), rgba(255,44,155,1))" }}
+                  >
+                    {u.email[0].toUpperCase()}
+                  </div>
+                  <span className="truncate text-[12px]" style={{ color: "rgba(228,230,232,1)" }}>
+                    {u.email.split("@")[0]}
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* User's own tracks */}
+          {data && data.prompts.items.length > 0 && (
+            <>
+              <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(93,97,101,1)" }}>
+                Tracks
+              </p>
+              {data.prompts.items.map((p) => (
+                <button
+                  key={p.id}
+                  className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                >
+                  <div
+                    className="size-6 shrink-0 rounded-[6px]"
+                    style={{ background: "linear-gradient(135deg, #1a1a3e, #3a1a5c)" }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-medium" style={{ color: "rgba(228,230,232,1)" }}>
+                      {p.job?.title ?? (p.text.length > 28 ? p.text.slice(0, 28) + "…" : p.text)}
+                    </p>
+                    <p className="truncate text-[11px]" style={{ color: "rgba(93,97,101,1)" }}>
+                      {p.text.length > 32 ? p.text.slice(0, 32) + "…" : p.text}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -51,40 +183,13 @@ export function Sidebar() {
       </div>
 
       {/* Search */}
-      <div className="px-2.5 pb-4">
-        <button
-          className="flex w-full items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] transition-colors hover:border-border"
-          style={{
-            background: "#141414",
-            borderColor: "#2a2a2a",
-            color: "#FFF",
-          }}
-        >
-          <Image
-            src="/icons/search-md.svg"
-            width={13}
-            height={13}
-            alt="Search"
-          />
-          <span className="flex-1 text-left">Search</span>
-          <span
-            className="rounded px-1 py-px text-[10px]"
-            style={{ background: "#1c1c1c" }}
-          >
-            ⌘K
-          </span>
-        </button>
-      </div>
+      <SearchBar />
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5">
-        <NavItem href="/" label="Home" icon="/icons/home.svg" />
-        <NavItem href="/create" label="Create" icon="/icons/stars-01.svg" />
-        <NavItem
-          href="/explore"
-          label="Explore"
-          icon="/icons/compass-03 1.svg"
-        />
+        <NavItem disabled label="Home" icon="/icons/home.svg" />
+        <NavItem href="/" label="Create" icon="/icons/stars-01.svg" />
+        <NavItem disabled label="Explore" icon="/icons/compass-03 1.svg" />
       </nav>
 
       {/* Library */}
@@ -136,21 +241,16 @@ export function Sidebar() {
         className="flex flex-wrap items-center px-4"
         style={{ minHeight: 40, columnGap: 8, rowGap: 4 }}
       >
-        {["Pricing", "Affiliate", "API", "About", "Terms", "Privacy"].map(
-          (l) => (
-            <span
-              key={l}
-              className="cursor-pointer text-[10px] hover:text-muted-foreground"
-              style={{ color: "#4a4a4a" }}
-            >
-              {l}
-            </span>
-          ),
-        )}
-        <span
-          className="flex items-center gap-1 text-[10px]"
-          style={{ color: "#4a4a4a" }}
-        >
+        {["Pricing", "Affiliate", "API", "About", "Terms", "Privacy"].map((l) => (
+          <span
+            key={l}
+            className="cursor-pointer text-[10px] hover:text-muted-foreground"
+            style={{ color: "#4a4a4a" }}
+          >
+            {l}
+          </span>
+        ))}
+        <span className="flex items-center gap-1 text-[10px]" style={{ color: "#4a4a4a" }}>
           <Image
             src="/icons/UM - United States Minor Outlying Islands.svg"
             width={12}
