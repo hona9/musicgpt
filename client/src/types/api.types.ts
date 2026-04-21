@@ -105,9 +105,22 @@ export interface CreatePromptResponse {
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
+export type SearchItemType = "user" | "audio";
+
+export interface SearchItem {
+  type: SearchItemType;
+  id: string;
+  display: string;
+  tier?: string;
+  audioUrl?: string | null;
+  promptText?: string;
+  createdAt: string;
+  score: number;
+}
+
 export interface SearchResult {
-  users: { items: User[]; nextCursor: string | null };
-  prompts: { items: PromptWithJob[]; nextCursor: string | null };
+  items: SearchItem[];
+  nextCursor: string | null;
 }
 
 // ─── API Envelope ─────────────────────────────────────────────────────────────

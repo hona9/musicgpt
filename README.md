@@ -549,6 +549,53 @@ Zustand updates are synchronous and immediately reflected in the UI. TanStack Qu
 - `postgres_data` — persists database across restarts
 - `redis_data` — persists Redis data across restarts
 
+### Dockerfiles
+
+Both images use a two-stage build to keep the production image lean.
+
+**`server/Dockerfile`**
+
+```
+Stage 1 — builder (node:20-alpine)
+  ├── npm ci
+  ├── npx prisma generate   ← generates the Prisma client into node_modules
+  ├── tsc (npm run build)   ← compiles TypeScript to dist/
+  └── copies generated Prisma client into dist/
+
+Stage 2 — production (node:20-alpine)
+  ├── Copies node_modules, dist/, prisma/, docker-entrypoint.sh
+  ├── ENV NODE_ENV=production
+  ├── EXPOSE 8000
+  └── ENTRYPOINT docker-entrypoint.sh → runs prisma migrate deploy, then node dist/server.js
+```
+
+The entrypoint script runs `prisma migrate deploy` before starting the server so the database schema is always in sync with the deployed image. Set `SKIP_MIGRATIONS=1` on the `worker` service to avoid running migrations twice.
+
+**`client/Dockerfile`**
+
+```
+Stage 1 — builder (node:20-alpine)
+  ├── ARG NEXT_PUBLIC_API_URL   ← baked in at build time (Next.js public env vars)
+  ├── npm ci
+  └── next build                ← produces a standalone server bundle
+
+Stage 2 — production (node:20-alpine)
+  ├── Copies .next/standalone/  ← self-contained Node server (~no node_modules needed)
+  ├── Copies .next/static/      ← hashed static assets
+  ├── Copies public/            ← icons, images
+  ├── ENV HOSTNAME=0.0.0.0      ← required for Docker networking
+  ├── EXPOSE 3000
+  └── CMD node server.js        ← Next.js standalone entry point
+```
+
+`NEXT_PUBLIC_API_URL` must be passed as a build argument because Next.js inlines public env vars at build time — it cannot be changed at runtime without rebuilding the image:
+
+```bash
+docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 -t musicgpt-client client/
+```
+
+In `docker-compose.yml` this is handled automatically via the `args` section under `build`.
+
 ---
 
 ## API Reference

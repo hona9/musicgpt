@@ -1,8 +1,7 @@
-import { UserEntity } from "../entities/User";
-import { PromptWithJobEntity } from "../entities/PromptWithJob";
-import { CursorData, PageResult } from "../../shared/types/pagination.types";
+import { SearchItemEntity } from "../entities/SearchItem";
+import { SearchCursorData } from "../../shared/utils/cursor";
+import { PageResult } from "../../shared/types/pagination.types";
 
 export interface ISearchRepository {
-  searchUsers(q: string, cursor: CursorData | null, limit: number): Promise<PageResult<UserEntity>>;
-  searchPrompts(q: string, userId: string, cursor: CursorData | null, limit: number): Promise<PageResult<PromptWithJobEntity>>;
+  search(q: string, cursor: SearchCursorData | null, limit: number): Promise<PageResult<SearchItemEntity>>;
 }

@@ -54,7 +54,10 @@ function SearchBar() {
   const { data, isFetching } = useSearch(debouncedQuery);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const hasResults = data && (data.users.items.length > 0 || data.prompts.items.length > 0);
+  const items = data?.pages[0]?.items ?? [];
+  const users = items.filter((i) => i.type === "user");
+  const tracks = items.filter((i) => i.type === "audio");
+  const hasResults = users.length > 0 || tracks.length > 0;
   const showDropdown = open && debouncedQuery.trim().length >= 2;
 
   return (
@@ -108,12 +111,12 @@ function SearchBar() {
           )}
 
           {/* Users */}
-          {data && data.users.items.length > 0 && (
+          {users.length > 0 && (
             <>
               <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(93,97,101,1)" }}>
                 Users
               </p>
-              {data.users.items.map((u) => (
+              {users.map((u) => (
                 <button
                   key={u.id}
                   className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
@@ -122,25 +125,25 @@ function SearchBar() {
                     className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                     style={{ background: "linear-gradient(180deg, rgba(199,0,255,1), rgba(255,44,155,1))" }}
                   >
-                    {u.email[0].toUpperCase()}
+                    {u.display[0]?.toUpperCase()}
                   </div>
                   <span className="truncate text-[12px]" style={{ color: "rgba(228,230,232,1)" }}>
-                    {u.email.split("@")[0]}
+                    {u.display.split("@")[0]}
                   </span>
                 </button>
               ))}
             </>
           )}
 
-          {/* User's own tracks */}
-          {data && data.prompts.items.length > 0 && (
+          {/* Tracks */}
+          {tracks.length > 0 && (
             <>
               <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(93,97,101,1)" }}>
                 Tracks
               </p>
-              {data.prompts.items.map((p) => (
+              {tracks.map((t) => (
                 <button
-                  key={p.id}
+                  key={t.id}
                   className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
                 >
                   <div
@@ -149,11 +152,13 @@ function SearchBar() {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-medium" style={{ color: "rgba(228,230,232,1)" }}>
-                      {p.job?.title ?? (p.text.length > 28 ? p.text.slice(0, 28) + "…" : p.text)}
+                      {t.display.length > 28 ? t.display.slice(0, 28) + "…" : t.display}
                     </p>
-                    <p className="truncate text-[11px]" style={{ color: "rgba(93,97,101,1)" }}>
-                      {p.text.length > 32 ? p.text.slice(0, 32) + "…" : p.text}
-                    </p>
+                    {t.promptText && t.promptText !== t.display && (
+                      <p className="truncate text-[11px]" style={{ color: "rgba(93,97,101,1)" }}>
+                        {t.promptText.length > 32 ? t.promptText.slice(0, 32) + "…" : t.promptText}
+                      </p>
+                    )}
                   </div>
                 </button>
               ))}
@@ -189,7 +194,7 @@ export function Sidebar() {
       <nav className="flex flex-col gap-0.5">
         <NavItem disabled label="Home" icon="/icons/home.svg" />
         <NavItem href="/" label="Create" icon="/icons/stars-01.svg" />
-        <NavItem disabled label="Explore" icon="/icons/compass-03 1.svg" />
+        <NavItem href="/explore" label="Explore" icon="/icons/compass-03 1.svg" />
       </nav>
 
       {/* Library */}

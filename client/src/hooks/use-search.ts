@@ -1,12 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { searchApi } from "@/lib/api/search.api";
 
 export function useSearch(query: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["search", query],
-    queryFn: () => searchApi.search({ q: query, limit: 8 }).then((r) => r.data.data),
+    queryFn: ({ pageParam }) =>
+      searchApi
+        .search({ q: query, limit: 10, cursor: pageParam })
+        .then((r) => r.data.data),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: query.trim().length >= 2,
     staleTime: 30_000,
   });
