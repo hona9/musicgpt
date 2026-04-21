@@ -49,14 +49,16 @@ export class UserRepository implements IUserRepository {
 
   async findAll(cursor: CursorData | null, limit: number): Promise<PageResult<UserEntity>> {
     const rows = await prisma.user.findMany({
-      where: cursor
+      ...(cursor
         ? {
-            OR: [
-              { createdAt: { lt: cursor.createdAt } },
-              { createdAt: { equals: cursor.createdAt }, id: { lt: cursor.id } },
-            ],
+            where: {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: { equals: cursor.createdAt }, id: { lt: cursor.id } },
+              ],
+            },
           }
-        : undefined,
+        : {}),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
     });
@@ -64,7 +66,7 @@ export class UserRepository implements IUserRepository {
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore
-      ? encodeCursor(items[items.length - 1].id, items[items.length - 1].createdAt)
+      ? encodeCursor(items[items.length - 1]!.id, items[items.length - 1]!.createdAt)
       : null;
 
     return { items: items.map(this.toEntity), nextCursor };

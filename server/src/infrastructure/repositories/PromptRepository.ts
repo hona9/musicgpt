@@ -46,7 +46,7 @@ export class PromptRepository implements IPromptRepository {
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore
-      ? encodeCursor(items[items.length - 1].id, items[items.length - 1].createdAt)
+      ? encodeCursor(items[items.length - 1]!.id, items[items.length - 1]!.createdAt)
       : null;
 
     return {

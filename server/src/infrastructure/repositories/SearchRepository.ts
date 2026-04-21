@@ -51,7 +51,7 @@ export class SearchRepository implements ISearchRepository {
 
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? encodeCursor(items[items.length - 1].id, items[items.length - 1].createdAt) : null;
+    const nextCursor = hasMore ? encodeCursor(items[items.length - 1]!.id, items[items.length - 1]!.createdAt) : null;
 
     return {
       items: items.map((r) => ({
@@ -99,7 +99,7 @@ export class SearchRepository implements ISearchRepository {
 
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? encodeCursor(items[items.length - 1].id, items[items.length - 1].createdAt) : null;
+    const nextCursor = hasMore ? encodeCursor(items[items.length - 1]!.id, items[items.length - 1]!.createdAt) : null;
 
     return {
       items: items.map((r) => this.toPromptWithJob(r)),

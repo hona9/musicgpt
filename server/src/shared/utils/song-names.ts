@@ -28,5 +28,5 @@ const SONG_NAMES = [
 ];
 
 export function pickSongTitle(): string {
-  return SONG_NAMES[Math.floor(Math.random() * SONG_NAMES.length)];
+  return SONG_NAMES[Math.floor(Math.random() * SONG_NAMES.length)]!;
 }
