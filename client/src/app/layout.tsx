@@ -12,6 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "MusicGPT",
   description: "AI-powered music generation",
+  icons: {
+    icon: "/Logo.svg",
+    shortcut: "/Logo.svg",
+    apple: "/Logo.svg",
+  },
 };
 
 export default function RootLayout({

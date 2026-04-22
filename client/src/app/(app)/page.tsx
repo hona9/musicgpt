@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PromptBox } from "@/components/home/prompt-box";
 import { RecentStrip } from "@/components/home/recent-strip";
 import { ProfilePopup } from "@/components/profile/profile-popup";
@@ -12,6 +12,8 @@ import { useUIStore } from "@/store/ui.store";
 export default function HomePage() {
   const [promptText, setPromptText] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const avatarRef = useRef<HTMLButtonElement>(null);
+  const closePopupRef = useRef<(() => void) | null>(null);
 
   const user = useAuthStore((s) => s.user);
   const setJobEvent = useJobsStore((s) => s.setJobEvent);
@@ -84,9 +86,13 @@ export default function HomePage() {
 
         <div className="relative">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowProfile((p) => !p);
+            ref={avatarRef}
+            onClick={() => {
+              if (showProfile) {
+                closePopupRef.current?.();
+              } else {
+                setShowProfile(true);
+              }
             }}
             className="relative flex size-9 items-center justify-center rounded-full text-[14px] font-bold"
             style={{
@@ -109,7 +115,7 @@ export default function HomePage() {
           </button>
 
           {showProfile && (
-            <ProfilePopup onClose={() => setShowProfile(false)} />
+            <ProfilePopup onClose={() => setShowProfile(false)} triggerRef={avatarRef} closeRef={closePopupRef} />
           )}
         </div>
       </div>
@@ -121,8 +127,8 @@ export default function HomePage() {
           {/* Prompt area — vertically centered */}
           <div className="flex min-h-[81vh] flex-col items-center justify-center px-4 py-10 animate-fade-up">
             <h1
-              className="mb-6 text-center text-[24px] font-bold md:mb-8 md:text-[36px]"
-              style={{ letterSpacing: "-0.025em" }}
+              className="mb-6 text-center text-[32px] font-semibold leading-[150%] tracking-[0.01em] md:mb-8"
+              style={{ color: "#E4E6E8" }}
             >
               What Song to Create?
             </h1>

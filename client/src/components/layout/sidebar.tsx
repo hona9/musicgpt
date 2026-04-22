@@ -21,27 +21,33 @@ function NavItem({ href, label, icon, disabled }: NavItemProps) {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
 
-  const className = cn(
-    "flex items-center gap-2 text-[13px] transition-all duration-150",
-    isActive
-      ? "rounded-[30px] h-[37px] px-4 py-[3px] bg-muted font-medium"
-      : "rounded-[30px] h-[37px] px-4 py-[3px] hover:bg-muted/50",
+  const pillClass = cn(
+    "inline-flex items-center gap-2 rounded-[30px] h-[37px] px-4 py-[3px]",
+    "text-[14px] font-medium leading-[31px] tracking-[0.02em] transition-all duration-150",
+    isActive ? "" : "hover:bg-muted/50",
   );
+
+  const content = (
+    <>
+      <Image src={icon} width={16} height={16} alt={label} />
+      {label}
+    </>
+  );
+
+  const activeStyle = isActive ? { background: "#FFFFFF17" } : {};
 
   if (disabled || !href) {
     return (
-      <span className={className} style={{ color: "#fff" }}>
-        <Image src={icon} width={16} height={16} alt={label} />
-        {label}
-      </span>
+      <div className="flex px-2.5">
+        <span className={pillClass} style={{ color: "#fff", ...activeStyle }}>{content}</span>
+      </div>
     );
   }
 
   return (
-    <Link href={href} className={className}>
-      <Image src={icon} width={16} height={16} alt={label} />
-      {label}
-    </Link>
+    <div className="flex px-2.5">
+      <Link href={href} className={pillClass} style={{ color: "#fff", ...activeStyle }}>{content}</Link>
+    </div>
   );
 }
 
@@ -63,31 +69,32 @@ function SearchBar() {
   return (
     <div ref={containerRef} className="relative px-2.5 pb-4">
       <div
-        className="flex w-full items-center gap-2 overflow-hidden rounded-full border px-3 py-1.5 text-[12px] transition-colors"
+        className="flex w-[146px] h-[37px] items-center justify-between overflow-hidden rounded-[30px] border px-4 py-[3px] transition-colors"
         style={{
           background: "#141414",
-          borderColor: open ? "#3a3a3a" : "#2a2a2a",
+          borderColor: "#FFFFFF29",
         }}
       >
-        <Image src="/icons/search-md.svg" width={13} height={13} alt="Search" className="shrink-0" />
+        <Image src="/icons/search-md.svg" width={15} height={15} alt="Search" className="shrink-0" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Search"
-          className="min-w-0 flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-[rgba(255,255,255,0.3)]"
+          className="w-0 flex-1 bg-transparent text-[14px] font-medium leading-[31px] tracking-[0.02em] text-white text-center outline-none placeholder:text-white"
         />
         {query ? (
-          <button onClick={() => setQuery("")} className="text-[rgba(255,255,255,0.4)] hover:text-white">
+          <button onClick={() => setQuery("")} className="text-[rgba(255,255,255,0.4)] hover:text-white shrink-0">
             ×
           </button>
         ) : (
           <span
-            className="shrink-0 rounded px-1 py-px text-[10px]"
-            style={{ background: "#1c1c1c", color: "rgba(255,255,255,0.3)" }}
+            className="inline-flex items-center justify-center shrink-0 gap-[2px]"
+            style={{ width: 28, height: 17, color: "rgba(255,255,255,0.3)" }}
           >
-            ⌘K
+            <span className="text-[14px] font-normal leading-[1] tracking-[0.02em]">⌘</span>
+            <span className="text-[14px] font-normal leading-[1] tracking-[0.02em]">K</span>
           </span>
         )}
       </div>
@@ -225,7 +232,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         ].map(({ label, icon }) => (
           <button
             key={label}
-            className="flex w-full items-center gap-2 rounded-[30px] h-[37px] px-4 py-[3px] text-[13px] transition-all duration-150 hover:bg-muted/50"
+            className="flex w-full items-center gap-2 rounded-[30px] h-[37px] px-4 py-[3px] text-[14px] font-medium leading-[31px] tracking-[0.02em] transition-all duration-150 hover:bg-muted/50"
             style={{ color: "#fff" }}
           >
             <Image src={icon} width={16} height={16} alt={label} />

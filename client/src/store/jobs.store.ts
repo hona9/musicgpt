@@ -32,10 +32,13 @@ export const useJobsStore = create<JobsState>()((set) => ({
     }),
 
   addRecentCompleted: (event) =>
-    set((s) => ({
-      recentCompleted: [event, ...s.recentCompleted.filter((j) => j.jobId !== event.jobId)]
-        .slice(0, MAX_RECENT_COMPLETED),
-    })),
+    set((s) => {
+      const merged = { ...s.jobs[event.jobId], ...event };
+      return {
+        recentCompleted: [merged, ...s.recentCompleted.filter((j) => j.jobId !== event.jobId)]
+          .slice(0, MAX_RECENT_COMPLETED),
+      };
+    }),
 
   incrementUnread: () => set((s) => ({ unreadCount: s.unreadCount + 1 })),
   clearUnread: () => set({ unreadCount: 0 }),
