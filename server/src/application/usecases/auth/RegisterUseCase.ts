@@ -3,6 +3,7 @@ import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { UserEntity } from "../../../domain/entities/User";
 import { RegisterDto } from "../../dtos/auth/RegisterDto";
 import { ConflictError } from "../../../shared/errors";
+import { SubscriptionTier } from "../../../shared/types/enums";
 
 export class RegisterUseCase {
   constructor(private readonly userRepository: IUserRepository) {}
@@ -12,6 +13,7 @@ export class RegisterUseCase {
     if (existing) throw new ConflictError("Email already in use.");
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    return this.userRepository.create({ email: dto.email, passwordHash });
+    const tier = dto.tier as SubscriptionTier;
+    return this.userRepository.create({ email: dto.email, passwordHash, tier });
   }
 }

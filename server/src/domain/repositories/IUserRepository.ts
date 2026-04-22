@@ -13,6 +13,7 @@ export interface UserWithRefreshToken extends UserEntity {
 export interface CreateUserData {
   email: string;
   passwordHash: string;
+  tier: import("../../shared/types/enums").SubscriptionTier;
 }
 
 export interface IUserRepository {

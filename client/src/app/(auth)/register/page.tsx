@@ -12,6 +12,7 @@ import { useRegister } from "@/hooks/use-auth";
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  tier: z.enum(["FREE", "PAID"]),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -22,8 +23,12 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { tier: "FREE" } });
+
+  const selectedTier = watch("tier");
 
   const serverError =
     (register_.error as { response?: { data?: { message?: string } } })?.response
@@ -64,6 +69,26 @@ export default function RegisterPage() {
             {errors.password && (
               <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Plan</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["FREE", "PAID"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setValue("tier", t)}
+                  className={`rounded-lg border py-2 text-sm font-medium transition-colors ${
+                    selectedTier === t
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border text-muted-foreground hover:border-foreground/50"
+                  }`}
+                >
+                  {t === "FREE" ? "Free" : "Paid"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {serverError && (

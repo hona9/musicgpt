@@ -2,7 +2,6 @@ import crypto from "crypto";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { IJwtService } from "../../../domain/services/IJwtService";
 import { UnauthorizedError } from "../../../shared/errors";
-import { REFRESH_TOKEN_TTL_DAYS } from "../../../config/limits";
 
 export interface RefreshTokenResult {
   accessToken: string;
@@ -31,13 +30,9 @@ export class RefreshTokenUseCase {
       tier: user.tier,
     });
 
-    const newRefreshToken = crypto.randomBytes(64).toString("hex");
-    const expiresAt = new Date(
-      Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
-    );
-
-    await this.userRepository.updateRefreshToken(user.id, newRefreshToken, expiresAt);
-
-    return { accessToken, refreshToken: newRefreshToken };
+    // No rotation — returning the same refresh token avoids the race condition
+    // where a browser abort (F5) could invalidate the token before the client
+    // saves the rotated value. The token is still wiped on explicit logout.
+    return { accessToken, refreshToken: token };
   }
 }

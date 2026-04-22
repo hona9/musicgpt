@@ -121,7 +121,7 @@
     50%   { --glow-pos: 104.71%; --glow-color: #FF7B16; }     /* Frame 3: orange right  */
     75%   { --glow-pos: 104.71%; --glow-color: transparent; } /* Frame 4: dark          */
     75.1% { --glow-pos: 0.35%;   --glow-color: transparent; } /* position resets while invisible */
-    100%  { --glow-pos: 0.35%;   --glow-color: #FF7B16; }     /* back to Frame 1        */
+    100%  { --glow-pos: 0.35%;   --glow-color: transparent; } /* ends dark — play-once mode      */
   }
 
   @keyframes bar-bounce {
@@ -266,7 +266,7 @@
   z-index: 1;
   mix-blend-mode: screen;
   opacity: 0.54;
-  animation: glow-frames 1800ms linear infinite;
+  animation: glow-frames 1800ms linear 1 forwards;
 }
 
 .glow-layer-bloom {
@@ -276,7 +276,7 @@
   background: linear-gradient(90deg, transparent -10%, var(--glow-color) var(--glow-pos), transparent 111%);
   filter: blur(24px);
   opacity: 0.54;
-  animation: glow-frames 1800ms linear infinite;
+  animation: glow-frames 1800ms linear 1 forwards;
   z-index: 0;
   pointer-events: none;
 }

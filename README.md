@@ -14,25 +14,45 @@ A full-stack AI music generation app where users describe a song in plain text a
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Setup & Running the Project](#setup--running-the-project)
-  - [Prerequisites](#prerequisites)
-  - [Docker (Recommended)](#docker-recommended)
-  - [Local Development](#local-development)
-  - [Environment Variables](#environment-variables)
-- [Backend Architecture](#backend-architecture)
-  - [Clean Architecture Layers](#clean-architecture-layers)
-  - [Auth: JWT Access + Refresh Token Flow](#auth-jwt-access--refresh-token-flow)
-  - [Redis Caching](#redis-caching)
-  - [BullMQ: Queue & Workers](#bullmq-queue--workers)
-  - [Socket.IO](#socketio-backend)
-- [Frontend Architecture](#frontend-architecture)
-  - [Project Structure](#project-structure)
-  - [Auth Flow](#auth-flow)
-  - [Socket.IO Client](#socketio-client)
-  - [Caching Strategy](#caching-strategy)
-- [Docker Services](#docker-services)
-- [API Reference](#api-reference)
+- [MusicGPT](#musicgpt)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Setup \& Running the Project](#setup--running-the-project)
+    - [Prerequisites](#prerequisites)
+    - [Docker (Recommended)](#docker-recommended)
+    - [Local Development](#local-development)
+    - [Environment Variables](#environment-variables)
+      - [Server (`server/.env`)](#server-serverenv)
+      - [Client (`client/.env.local`)](#client-clientenvlocal)
+  - [Backend Architecture](#backend-architecture)
+    - [Clean Architecture Layers](#clean-architecture-layers)
+    - [Auth: JWT Access + Refresh Token Flow](#auth-jwt-access--refresh-token-flow)
+      - [Token Properties](#token-properties)
+      - [Full Lifecycle](#full-lifecycle)
+    - [Redis Caching](#redis-caching)
+      - [1. Prompt List Cache](#1-prompt-list-cache)
+      - [2. Token Blacklist](#2-token-blacklist)
+      - [3. Rate Limiting](#3-rate-limiting)
+    - [BullMQ: Queue \& Workers](#bullmq-queue--workers)
+      - [Job Flow](#job-flow)
+      - [Priority](#priority)
+      - [Key files](#key-files)
+    - [Socket.IO (Backend)](#socketio-backend)
+      - [Setup \& Authentication](#setup--authentication)
+      - [Events (Server → Client)](#events-server--client)
+      - [Redis Pub/Sub for Multi-Process Deployments](#redis-pubsub-for-multi-process-deployments)
+  - [Frontend Architecture](#frontend-architecture)
+    - [Project Structure](#project-structure)
+    - [Auth Flow](#auth-flow)
+    - [Socket.IO Client](#socketio-client)
+      - [Connection Management](#connection-management)
+      - [Receiving Job Updates](#receiving-job-updates)
+    - [Caching Strategy](#caching-strategy)
+      - [TanStack Query — Server Data Cache](#tanstack-query--server-data-cache)
+      - [Zustand — Live UI State](#zustand--live-ui-state)
+  - [Docker Services](#docker-services)
+    - [Dockerfiles](#dockerfiles)
+  - [API Reference](#api-reference)
 
 ---
 
@@ -40,9 +60,11 @@ A full-stack AI music generation app where users describe a song in plain text a
 
 MusicGPT accepts a natural-language prompt (e.g. "an upbeat lo-fi track with piano and rain sounds"), enqueues a generation job, and streams the result back to the user's browser the moment it's ready — no polling required.
 
+A **unified search** is available on the **Explore page**, allowing users to search across prompts and results in real time.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Browser (Next.js)                        │
+│                         Browser (Next.js)                       │
 │  ┌─────────────┐   HTTP (Axios)   ┌──────────────────────────┐  │
 │  │ TanStack Q  │◄────────────────►│      Express API v1      │  │
 │  └─────────────┘                  └──────────┬───────────────┘  │
@@ -51,12 +73,12 @@ MusicGPT accepts a natural-language prompt (e.g. "an upbeat lo-fi track with pia
 │  └─────────────┘                  └──────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                                           │
-                    ┌─────────────────────┼────────────────────┐
-                    │                     │                     │
-             ┌──────▼──────┐    ┌─────────▼──────┐    ┌────────▼──────┐
-             │  PostgreSQL  │    │     Redis       │    │  BullMQ Queue │
-             │  (Prisma)    │    │  Cache/Blacklist│    │  + Worker     │
-             └─────────────┘    └────────────────┘    └───────────────┘
+                    ┌─────────────────────┼──────────────────────┐
+                    │                     │                      │
+             ┌──────▼──────┐    ┌─────────▼────────┐    ┌────────▼──────┐
+             │  PostgreSQL │    │     Redis        │    │  BullMQ Queue │
+             │  (Prisma)   │    │  Cache/Blacklist │    │  + Worker     │
+             └─────────────┘    └──────────────────┘    └───────────────┘
 ```
 
 ---
@@ -74,7 +96,7 @@ All services — PostgreSQL, Redis, API server, BullMQ worker, and the Next.js c
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/musicgpt.git
+git clone https://github.com/hona9/musicgpt.git
 cd musicgpt
 
 # 2. Create the server environment file
@@ -98,11 +120,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 docker compose up --build
 ```
 
-| Service  | URL                              |
-|----------|----------------------------------|
-| Frontend | http://localhost:3000            |
-| API      | http://localhost:8000            |
-| API Docs | http://localhost:8000/api-docs   |
+| Service  | URL                            |
+| -------- | ------------------------------ |
+| Frontend | http://localhost:3000          |
+| API      | http://localhost:8000          |
+| API Docs | http://localhost:8000/api-docs |
 
 Database migrations run automatically on first boot. To stop:
 
@@ -146,19 +168,19 @@ npm run dev                  # starts Next.js with Turbopack on port 3000
 
 #### Server (`server/.env`)
 
-| Variable            | Required | Default       | Description                                              |
-|---------------------|----------|---------------|----------------------------------------------------------|
-| `DATABASE_URL`      | Yes      | —             | PostgreSQL connection string                             |
-| `REDIS_URL`         | Yes      | —             | Redis connection string                                  |
-| `JWT_ACCESS_SECRET` | Yes      | —             | Secret for signing JWTs (min 64 chars recommended)       |
-| `NODE_ENV`          | No       | `development` | `development` or `production`                            |
-| `PORT`              | No       | `8000`        | HTTP port the Express server listens on                  |
-| `CORS_ORIGIN`       | No       | `*`           | Allowed CORS origin (e.g. `http://localhost:3000`)       |
+| Variable            | Required | Default       | Description                                        |
+| ------------------- | -------- | ------------- | -------------------------------------------------- |
+| `DATABASE_URL`      | Yes      | —             | PostgreSQL connection string                       |
+| `REDIS_URL`         | Yes      | —             | Redis connection string                            |
+| `JWT_ACCESS_SECRET` | Yes      | —             | Secret for signing JWTs (min 64 chars recommended) |
+| `NODE_ENV`          | No       | `development` | `development` or `production`                      |
+| `PORT`              | No       | `8000`        | HTTP port the Express server listens on            |
+| `CORS_ORIGIN`       | No       | `*`           | Allowed CORS origin (e.g. `http://localhost:3000`) |
 
 #### Client (`client/.env.local`)
 
-| Variable              | Required | Description                             |
-|-----------------------|----------|-----------------------------------------|
+| Variable              | Required | Description                               |
+| --------------------- | -------- | ----------------------------------------- |
 | `NEXT_PUBLIC_API_URL` | Yes      | Backend base URL (included at build time) |
 
 ---
@@ -202,10 +224,10 @@ MusicGPT uses a two-token strategy designed so that the short-lived access token
 
 #### Token Properties
 
-| Token          | Lifetime | Storage (server) | Storage (client)  |
-|----------------|----------|------------------|-------------------|
-| Access token   | 15 min   | Never stored     | Memory only (Zustand) |
-| Refresh token  | 10 days  | PostgreSQL       | `localStorage`    |
+| Token         | Lifetime | Storage (server) | Storage (client)      |
+| ------------- | -------- | ---------------- | --------------------- |
+| Access token  | 15 min   | Never stored     | Memory only (Zustand) |
+| Refresh token | 10 days  | PostgreSQL       | `localStorage`        |
 
 #### Full Lifecycle
 
@@ -240,6 +262,7 @@ Logout
 ```
 
 **Key files:**
+
 - `server/src/infrastructure/services/JwtService.ts` — sign/verify
 - `server/src/presentation/middlewares/auth.middleware.ts` — per-request verification
 - `client/src/lib/api/client.ts` — Axios interceptors
@@ -323,12 +346,13 @@ POST /api/v1/prompts
 
 #### Priority
 
-| Tier | Priority Value | Effect |
-|------|---------------|--------|
-| FREE | 0             | Processed after PAID jobs |
-| PAID | 10            | Processed first |
+| Tier | Priority Value | Effect                    |
+| ---- | -------------- | ------------------------- |
+| FREE | 0              | Processed after PAID jobs |
+| PAID | 10             | Processed first           |
 
 #### Key files
+
 - `server/src/infrastructure/queue/prompt.queue.ts` — queue definition
 - `server/src/infrastructure/queue/prompt.worker.ts` — worker + scheduler
 - `server/src/config/limits.ts` — tier priorities and rate limits
@@ -356,11 +380,11 @@ File: `server/src/infrastructure/socketio/socketio.server.ts`
 
 #### Events (Server → Client)
 
-| Event           | Payload                                              | When                       |
-|-----------------|------------------------------------------------------|----------------------------|
-| `job:processing`| `{ jobId, promptId, userId, status }`               | Worker starts the job      |
-| `job:completed` | `{ jobId, promptId, userId, status, audioUrl, title }`| Job finishes successfully  |
-| `job:failed`    | `{ jobId, promptId, userId, status, errorMessage }` | Job fails (all retries exhausted) |
+| Event            | Payload                                                | When                              |
+| ---------------- | ------------------------------------------------------ | --------------------------------- |
+| `job:processing` | `{ jobId, promptId, userId, status }`                  | Worker starts the job             |
+| `job:completed`  | `{ jobId, promptId, userId, status, audioUrl, title }` | Job finishes successfully         |
+| `job:failed`     | `{ jobId, promptId, userId, status, errorMessage }`    | Job fails (all retries exhausted) |
 
 #### Redis Pub/Sub for Multi-Process Deployments
 
@@ -521,11 +545,11 @@ fetchNextPage: cursor-based (limit = 20 per page)
 
 `jobs.store.ts` holds ephemeral UI state that changes rapidly:
 
-| State             | Contents                                    | Used by                          |
-|-------------------|---------------------------------------------|----------------------------------|
-| `jobs` (map)      | All active/recent jobs keyed by jobId       | ProfilePopup job list, badges    |
-| `recentCompleted` | Last 5 completed jobs                       | RecentStrip on home page         |
-| `unreadCount`     | Count of new completions since last viewed  | Notification badge on profile button |
+| State             | Contents                                   | Used by                              |
+| ----------------- | ------------------------------------------ | ------------------------------------ |
+| `jobs` (map)      | All active/recent jobs keyed by jobId      | ProfilePopup job list, badges        |
+| `recentCompleted` | Last 5 completed jobs                      | RecentStrip on home page             |
+| `unreadCount`     | Count of new completions since last viewed | Notification badge on profile button |
 
 Zustand updates are synchronous and immediately reflected in the UI. TanStack Query handles persistence and background sync.
 
@@ -533,19 +557,20 @@ Zustand updates are synchronous and immediately reflected in the UI. TanStack Qu
 
 ## Docker Services
 
-| Service    | Image              | Port  | Purpose                                       |
-|------------|--------------------|-------|-----------------------------------------------|
-| `postgres` | postgres:16-alpine | 5432  | Primary SQL database (Prisma ORM)             |
-| `redis`    | redis:7-alpine     | 6379  | Cache, token blacklist, rate limiting, pub/sub|
-| `server`   | Custom Dockerfile  | 8000  | Express API + Socket.IO + embedded worker     |
-| `worker`   | Custom Dockerfile  | —     | Standalone BullMQ worker (optional scale-out) |
-| `client`   | Custom Dockerfile  | 3000  | Next.js 16 frontend (standalone output)       |
+| Service    | Image              | Port | Purpose                                        |
+| ---------- | ------------------ | ---- | ---------------------------------------------- |
+| `postgres` | postgres:16-alpine | 5432 | Primary SQL database (Prisma ORM)              |
+| `redis`    | redis:7-alpine     | 6379 | Cache, token blacklist, rate limiting, pub/sub |
+| `server`   | Custom Dockerfile  | 8000 | Express API + Socket.IO + embedded worker      |
+| `worker`   | Custom Dockerfile  | —    | Standalone BullMQ worker (optional scale-out)  |
+| `client`   | Custom Dockerfile  | 3000 | Next.js 16 frontend (standalone output)        |
 
 **Health checks** are configured for `postgres` (`pg_isready`) and `redis` (`redis-cli ping`). The `server` service waits for both to be healthy before starting and exposes a `GET /health` endpoint for its own check.
 
 **Database migrations** run automatically via `docker-entrypoint.sh` when the server container starts. The standalone `worker` service sets `SKIP_MIGRATIONS=1` to avoid running migrations twice.
 
 **Volumes:**
+
 - `postgres_data` — persists database across restarts
 - `redis_data` — persists Redis data across restarts
 
@@ -608,14 +633,14 @@ http://localhost:8000/api-docs
 
 All endpoints are prefixed with `/api/v1/`. Key route groups:
 
-| Prefix               | Description                             |
-|----------------------|-----------------------------------------|
-| `POST /auth/register`| Create account                          |
-| `POST /auth/login`   | Log in, receive token pair              |
-| `POST /auth/refresh` | Rotate access + refresh tokens          |
-| `POST /auth/logout`  | Blacklist token, clear refresh          |
-| `GET  /prompts`      | Paginated prompt + job history          |
-| `POST /prompts`      | Submit a new generation prompt          |
-| `GET  /search`       | Search prompts                          |
-| `GET  /users/me`     | Current user profile                    |
-| `GET  /health`       | Service health check                    |
+| Prefix                | Description                    |
+| --------------------- | ------------------------------ |
+| `POST /auth/register` | Create account                 |
+| `POST /auth/login`    | Log in, receive token pair     |
+| `POST /auth/refresh`  | Rotate access + refresh tokens |
+| `POST /auth/logout`   | Blacklist token, clear refresh |
+| `GET  /prompts`       | Paginated prompt + job history |
+| `POST /prompts`       | Submit a new generation prompt |
+| `GET  /search`        | Search prompts                 |
+| `GET  /users/me`      | Current user profile           |
+| `GET  /health`        | Service health check           |

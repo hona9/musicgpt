@@ -74,6 +74,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  tier?: UserTier;
 }
 
 export interface LoginResponse {

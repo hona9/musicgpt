@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +19,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const login = useLogin();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -25,9 +27,17 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const serverError =
-    (login.error as { response?: { data?: { message?: string } } })?.response
-      ?.data?.message ?? (login.error ? "Invalid email or password" : null);
+  const onSubmit = (data: FormData) => {
+    setServerError(null);
+    login.mutate(data, {
+      onError: (err) => {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Invalid email or password";
+        setServerError(message);
+      },
+    });
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -37,7 +47,7 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Sign in to MusicGPT</p>
         </div>
 
-        <form onSubmit={handleSubmit((data) => login.mutate(data))} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input

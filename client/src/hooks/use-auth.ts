@@ -29,7 +29,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: async (data: RegisterRequest) => {
       await authApi.register(data);
-      const loginRes = await authApi.login(data);
+      const loginRes = await authApi.login({ email: data.email, password: data.password });
       return loginRes.data.data;
     },
     onSuccess: ({ user, accessToken, refreshToken }) => {
