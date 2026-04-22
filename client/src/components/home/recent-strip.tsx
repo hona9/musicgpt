@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { usePrompts } from "@/hooks/use-prompts";
 import { useJobsStore, ACTIVE_STATUSES } from "@/store/jobs.store";
 import type { PromptWithJob } from "@/types/api.types";
@@ -26,7 +26,15 @@ function deriveTitle(text: string): string {
 export function RecentStrip() {
   const { data, isLoading } = usePrompts();
   const jobs = useJobsStore((s) => s.jobs);
+  const recentCompleted = useJobsStore((s) => s.recentCompleted);
   const activeJobs = Object.values(jobs).filter((j) => ACTIVE_STATUSES.includes(j.status));
+
+  // Title lookup keyed by promptId — sourced directly from socket events, always up-to-date
+  const socketTitleByPromptId = useMemo(() => {
+    const map: Record<string, string | null | undefined> = {};
+    recentCompleted.forEach((job) => { map[job.promptId] = job.title; });
+    return map;
+  }, [recentCompleted]);
 
   const allPrompts = data?.pages.flatMap((p) => p.items) ?? [];
   const completedPrompts = allPrompts.filter((p) => p.job?.status === "COMPLETED").slice(0, 6);
@@ -35,13 +43,18 @@ export function RecentStrip() {
   if (!hasContent) return null;
 
   return (
-    <div className="mx-auto w-[800px] shrink-0 pb-6 pt-4">
+    <div className="mx-auto w-full max-w-[800px] shrink-0 px-4 pb-6 pt-4">
       <p className="mb-4 text-[15px] font-semibold">Recent generations</p>
 
       <div className="flex flex-col gap-5">
         {/* Completed tracks */}
         {completedPrompts.map((prompt, i) => (
-          <CompletedRow key={prompt.id} prompt={prompt} gradient={GRADIENTS[i % GRADIENTS.length]} />
+          <CompletedRow
+            key={prompt.id}
+            prompt={prompt}
+            gradient={GRADIENTS[i % GRADIENTS.length]}
+            socketTitle={socketTitleByPromptId[prompt.id]}
+          />
         ))}
 
         {/* Skeleton rows for active jobs */}
@@ -61,12 +74,13 @@ export function RecentStrip() {
   );
 }
 
-function CompletedRow({ prompt, gradient }: { prompt: PromptWithJob; gradient: string }) {
+function CompletedRow({ prompt, gradient, socketTitle }: { prompt: PromptWithJob; gradient: string; socketTitle?: string | null }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrl = prompt.job?.audioUrl ?? null;
 
-  const title = prompt.job?.title ?? deriveTitle(prompt.text);
+  // Prefer server title from cache, fall back to socket event title, then derive from prompt text
+  const title = prompt.job?.title ?? socketTitle ?? deriveTitle(prompt.text);
   const subtitle = prompt.text.length > 80 ? prompt.text.slice(0, 80) + "…" : prompt.text;
 
   const togglePlay = () => {

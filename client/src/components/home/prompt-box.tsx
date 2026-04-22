@@ -54,20 +54,20 @@ export function PromptBox({
   const hasText = value.trim().length > 0;
 
   return (
-    <div className="w-[800px] h-[170px]">
+    <div className="w-full max-w-[800px]">
       {/* Animated border box */}
-      <div className="glow-box">
+      <div className="glow-box" style={{ height: "auto", minHeight: 150 }}>
         <div className="glow-layer glow-layer-static" />
         <div className="glow-layer-bloom" />
-        <div className="glow-box-inner flex flex-col gap-[10px] px-5 pb-4 pt-5">
+        <div className="glow-box-inner flex flex-col gap-[10px] px-4 pb-4 pt-4 md:px-5 md:pt-5">
           {/* Textarea + cycling placeholder */}
-          <div className="relative flex-1">
+          <div className="relative" style={{ minHeight: 72 }}>
             <textarea
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="h-full w-full resize-none bg-transparent text-[14px] leading-relaxed text-foreground outline-none placeholder:text-transparent"
+              className="h-full min-h-[72px] w-full resize-none bg-transparent text-[14px] leading-relaxed text-foreground outline-none placeholder:text-transparent"
             />
             {!hasText && (
               <div
@@ -130,7 +130,7 @@ export function PromptBox({
 
             {/* Lyrics pill */}
             <button
-              className="flex h-[40px] items-center gap-[6px] rounded-[100px] border px-4 text-muted-foreground transition-colors hover:text-foreground"
+              className="hidden sm:flex h-[40px] items-center gap-[6px] rounded-[100px] border px-4 text-muted-foreground transition-colors hover:text-foreground"
               style={{
                 borderColor: "#303438",
                 fontSize: 14,
@@ -148,7 +148,7 @@ export function PromptBox({
 
             {/* Tools */}
             <button
-              className="flex h-[40px] items-center gap-[6px] rounded-[100px] border px-4 text-muted-foreground transition-colors hover:text-foreground"
+              className="hidden sm:flex h-[40px] items-center gap-[6px] rounded-[100px] border px-4 text-muted-foreground transition-colors hover:text-foreground"
               style={{
                 borderColor: "#303438",
                 fontSize: 14,

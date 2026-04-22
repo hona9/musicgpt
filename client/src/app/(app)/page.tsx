@@ -7,6 +7,7 @@ import { ProfilePopup } from "@/components/profile/profile-popup";
 import { useCreatePrompt } from "@/hooks/use-prompts";
 import { useJobsStore, ACTIVE_STATUSES } from "@/store/jobs.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useUIStore } from "@/store/ui.store";
 
 export default function HomePage() {
   const [promptText, setPromptText] = useState("");
@@ -21,6 +22,7 @@ export default function HomePage() {
   const createPrompt = useCreatePrompt();
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "U";
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
   const handleSubmit = useCallback(async () => {
     if (!promptText.trim() || createPrompt.isPending) return;
@@ -68,10 +70,18 @@ export default function HomePage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Topbar */}
-      <div
-        className="flex h-12 shrink-0 items-center justify-end px-5"
-        style={{  }}
-      >
+      <div className="flex h-12 shrink-0 items-center justify-between px-4 md:justify-end md:px-5">
+        {/* Hamburger — mobile only */}
+        <button
+          className="md:hidden flex size-9 items-center justify-center rounded-md text-white/60 hover:text-white"
+          onClick={toggleSidebar}
+          aria-label="Open menu"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+
         <div className="relative">
           <button
             onClick={(e) => {
@@ -109,9 +119,9 @@ export default function HomePage() {
         {/* Centered column capped at 1240px */}
         <div className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col">
           {/* Prompt area — vertically centered */}
-          <div className="flex min-h-[81vh] flex-col items-center justify-center py-10 animate-fade-up">
+          <div className="flex min-h-[81vh] flex-col items-center justify-center px-4 py-10 animate-fade-up">
             <h1
-              className="mb-8 text-center text-[36px] font-bold"
+              className="mb-6 text-center text-[24px] font-bold md:mb-8 md:text-[36px]"
               style={{ letterSpacing: "-0.025em" }}
             >
               What Song to Create?

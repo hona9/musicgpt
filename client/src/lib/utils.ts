@@ -22,6 +22,7 @@ export function patchJobInPages(
                 ? {
                     ...p.job,
                     status: event.status,
+                    title: event.title ?? p.job.title,
                     audioUrl: event.audioUrl ?? p.job.audioUrl,
                     errorMessage: event.errorMessage ?? p.job.errorMessage,
                   }

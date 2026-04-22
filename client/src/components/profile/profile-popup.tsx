@@ -41,7 +41,7 @@ export function ProfilePopup({ onClose }: ProfilePopupProps) {
   return (
     <div
       ref={popupRef}
-      className="absolute right-0 top-11 z-50 w-[400px] overflow-hidden rounded-[20px] animate-slide-down"
+      className="absolute right-0 top-11 z-50 w-[min(400px,calc(100vw-1.5rem))] overflow-hidden rounded-[20px] animate-slide-down"
       style={{
         background: "rgba(22,25,28,1)",
         boxShadow: "0px 0px 24px rgba(0,0,0,0.48)",

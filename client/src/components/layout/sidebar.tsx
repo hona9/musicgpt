@@ -172,7 +172,7 @@ function SearchBar() {
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside
       className="flex h-full w-[200px] shrink-0 flex-col border-r py-4"
@@ -183,8 +183,19 @@ export function Sidebar() {
       }}
     >
       {/* Logo */}
-      <div className="flex items-center px-4 pb-5 pt-4">
+      <div className="flex items-center justify-between px-4 pb-5 pt-4">
         <Image src="/Logo.svg" width={119} height={32} alt="MusicGPT" />
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-white/40 hover:text-white transition-colors"
+            aria-label="Close menu"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Search */}
