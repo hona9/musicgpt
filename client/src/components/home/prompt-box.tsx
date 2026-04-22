@@ -193,7 +193,7 @@ export function PromptBox({
         className="mt-3.5 text-center text-[12px]"
         style={{ color: "#4a4a4a" }}
       >
-        MusicGPT v8 Pro · Our latest AI audio model ·{" "}
+        MusicGPT v6 Pro · Our latest AI audio model ·{" "}
         <span className="cursor-pointer underline" style={{ color: "#7a7a7a" }}>
           Example prompts
         </span>
